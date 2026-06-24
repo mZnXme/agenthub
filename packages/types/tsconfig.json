@@ -1,0 +1,7 @@
+{
+  "extends": "@agenthub/tsconfig/base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["src/**/*"]
+}
