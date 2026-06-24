@@ -16,8 +16,10 @@ export default function LoginPage() {
       const token = await signInWithGoogle()
       localStorage.setItem('token', token)
       router.push('/chat')
-    } catch {
-      setError('Sign in failed. Please try again.')
+    } catch (e) {
+      console.error('[Google Sign-In Error]', e)
+      const msg = e instanceof Error ? e.message : String(e)
+      setError(`Sign in failed: ${msg}`)
     } finally {
       setLoading(false)
     }
