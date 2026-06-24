@@ -14,8 +14,14 @@ export class User {
   @Column()
   name: string
 
-  @Column()
-  passwordHash: string
+  @Column({ unique: true })
+  firebaseUid: string
+
+  @Column({ nullable: true })
+  picture: string | null
+
+  @Column({ nullable: true })
+  passwordHash: string | null
 
   @CreateDateColumn()
   createdAt: Date

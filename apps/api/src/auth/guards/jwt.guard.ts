@@ -1,3 +1,21 @@
-import { AuthGuard } from '@nestjs/passport'
+import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common'
+import { admin } from '../firebase-admin'
+import { UsersService } from '../../users/users.service'
 
-export class JwtGuard extends AuthGuard('jwt') {}
+@Injectable()
+export class JwtGuard implements CanActivate {
+  constructor(private readonly users: UsersService) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const req = context.switchToHttp().getRequest()
+    const token: string | undefined = req.headers['authorization']?.replace('Bearer ', '')
+    if (!token) throw new UnauthorizedException()
+    try {
+      const decoded = await admin.auth().verifyIdToken(token)
+      req.user = await this.users.upsertFirebaseUser(decoded)
+      return true
+    } catch {
+      throw new UnauthorizedException()
+    }
+  }
+}
