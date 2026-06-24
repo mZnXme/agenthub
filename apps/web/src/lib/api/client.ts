@@ -1,9 +1,9 @@
-import { auth } from '@/lib/firebase'
+import { getFirebaseAuth } from '@/lib/firebase'
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? ''
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const token = await auth.currentUser?.getIdToken() ?? (typeof window !== 'undefined' ? localStorage.getItem('token') : null)
+  const token = await getFirebaseAuth().currentUser?.getIdToken() ?? (typeof window !== 'undefined' ? localStorage.getItem('token') : null)
   const res = await fetch(`${BASE}${path}`, {
     ...init,
     headers: {
