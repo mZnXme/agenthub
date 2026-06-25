@@ -17,7 +17,7 @@ export class User {
   @Column({ unique: true })
   firebaseUid: string
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   picture: string | null
 
   @Column({ nullable: true })
