@@ -20,7 +20,7 @@ export class User {
   @Column({ type: 'varchar', nullable: true })
   picture: string | null
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   passwordHash: string | null
 
   @CreateDateColumn()
