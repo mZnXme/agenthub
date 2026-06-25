@@ -16,8 +16,8 @@ export default function ChatIndex() {
       .then((list: { id: string }[]) => {
         if (list.length > 0) return router.replace(`/chat/${list[0].id}`)
         return fetch(`${api}/api/sessions`, { method: 'POST', headers: h, body: '{}' })
-          .then((r) => r.json())
-          .then((s: { id: string }) => router.replace(`/chat/${s.id}`))
+          .then((r) => { if (!r.ok) throw new Error('Failed to create session'); return r.json() })
+          .then((s: { id: string }) => { if (s.id) router.replace(`/chat/${s.id}`) })
       })
   }, [])
 

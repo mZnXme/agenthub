@@ -63,19 +63,22 @@ export class SessionsService {
   }
 
   async create(userId: string, title?: string) {
-    await this.usage.checkAndRecord(userId, 'session')
+    await this.usage.checkLimit(userId, 'session')
     const baseUrl = await this.getProcessUrl(userId)
     const oc = await this.openCode.createSession(title, baseUrl) as { id: string }
     const pref = await this.models.getPreference(userId)
     const session = this.repo.create({ userId, openCodeSessionId: oc.id, title, modelConfigId: pref?.modelConfigId })
-    return this.repo.save(session)
+    const saved = await this.repo.save(session)
+    await this.usage.record(userId, 'session')
+    return saved
   }
 
   async sendMessage(id: string, userId: string, content: string) {
-    await this.usage.checkAndRecord(userId, 'message')
+    await this.usage.checkLimit(userId, 'message')
     const session = await this.repo.findOneByOrFail({ id, userId })
     const baseUrl = await this.getProcessUrl(userId)
     const result = await this.openCode.sendMessage(session.openCodeSessionId, content, undefined, baseUrl)
+    await this.usage.record(userId, 'message')
 
     const estimatedTokens = Math.ceil(content.length / 4)
     session.tokenCount = (session.tokenCount ?? 0) + estimatedTokens

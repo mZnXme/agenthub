@@ -45,14 +45,24 @@ export class UsageService implements OnApplicationBootstrap {
     return { plan, record }
   }
 
-  async checkAndRecord(userId: string, type: 'message' | 'session') {
+  async checkLimit(userId: string, type: 'message' | 'session') {
     const [plan, record] = await Promise.all([this.getPlan(userId), this.getRecord(userId)])
     if (type === 'message' && plan.maxMessagesPerDay !== -1 && record.messageCount >= plan.maxMessagesPerDay)
       throw new BadRequestException(`Daily message limit reached (${plan.maxMessagesPerDay})`)
     if (type === 'session' && plan.maxSessionsPerDay !== -1 && record.sessionCount >= plan.maxSessionsPerDay)
       throw new BadRequestException(`Daily session limit reached (${plan.maxSessionsPerDay})`)
-    if (type === 'message') await this.records.update(record.id, { messageCount: record.messageCount + 1 })
-    if (type === 'session')  await this.records.update(record.id, { sessionCount: record.sessionCount + 1 })
+  }
+
+  async record(userId: string, type: 'message' | 'session') {
+    const rec = await this.getRecord(userId)
+    if (type === 'message') await this.records.update(rec.id, { messageCount: rec.messageCount + 1 })
+    if (type === 'session')  await this.records.update(rec.id, { sessionCount: rec.sessionCount + 1 })
+  }
+
+  /** @deprecated use checkLimit + record separately */
+  async checkAndRecord(userId: string, type: 'message' | 'session') {
+    await this.checkLimit(userId, type)
+    await this.record(userId, type)
   }
 
   listPlans() { return this.plans.find() }
