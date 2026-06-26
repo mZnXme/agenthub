@@ -11,6 +11,10 @@ export class SendMessageDto {
 
   @IsOptional()
   @IsString()
+  modelName?: string
+
+  @IsOptional()
+  @IsString()
   @IsIn(['auto', 'minimal', 'low', 'medium', 'high', 'max', 'xhigh'])
   effort?: string
 }

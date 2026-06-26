@@ -38,9 +38,9 @@ export default function ChatPage() {
         <div style={s.modelBar}>
           <div style={s.modelControl}>
             <span style={s.modelLabel}>Model</span>
-            <select style={s.modelSelect} value={chat.modelConfigId} onChange={(event) => chat.selectModel(event.target.value)}>
+            <select style={s.modelSelect} value={chat.modelName} onChange={(event) => chat.selectModel(event.target.value)}>
               <option value="">OpenCode default</option>
-              {chat.models.map((model) => <option key={model.id} value={model.id}>{model.name}</option>)}
+              {chat.models.map((model) => <option key={model.id} value={model.id}>{model.id}</option>)}
             </select>
           </div>
           <div style={s.modelControl}>

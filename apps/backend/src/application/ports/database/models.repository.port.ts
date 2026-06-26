@@ -1,7 +1,7 @@
 export type ModelConfigInput = { name?: string; contextLimit?: number; compactAt?: number }
 export type CreateModelConfigInput = Required<Pick<ModelConfigInput, 'name' | 'contextLimit'>> & { compactAt?: number }
-export type PreferenceInput = { modelConfigId?: string; compactAt?: number }
-export type PreferenceRecord = { modelConfigId?: string | null; compactAt?: number | null }
+export type PreferenceInput = { modelConfigId?: string; modelName?: string; enabledModels?: string[]; compactAt?: number }
+export type PreferenceRecord = { modelConfigId?: string | null; modelName?: string | null; enabledModels?: unknown; compactAt?: number | null }
 export type ModelConfigRecord = { name: string; contextLimit: number; compactAt: number }
 
 export abstract class ModelsRepositoryPort {

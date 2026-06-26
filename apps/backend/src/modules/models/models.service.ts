@@ -12,6 +12,7 @@ export class ModelsService {
   deleteConfig(id: string) { return this.models.deleteConfig(id) }
   getPreference(userId: string) { return this.models.getPreference(userId) }
   upsertPreference(userId: string, data: PreferenceInput) { return this.models.upsertPreference(userId, data) }
+  listUserModels(userId: string) { return this.models.listUserModels(userId) }
   getEffectiveThreshold(userId: string, modelConfigId?: string | null) { return this.models.getEffectiveThreshold(userId, modelConfigId) }
   getEffectiveModelName(userId: string, modelConfigId?: string | null) { return this.models.getEffectiveModelName(userId, modelConfigId) }
 }

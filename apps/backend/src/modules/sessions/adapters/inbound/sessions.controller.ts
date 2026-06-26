@@ -34,7 +34,7 @@ export class SessionsController {
     @Param('id') id: string,
     @Body() body: SendMessageDto,
   ) {
-    return this.sessions.sendMessage(id, req.user.id, body.content, { modelConfigId: body.modelConfigId, effort: body.effort })
+    return this.sessions.sendMessage(id, req.user.id, body.content, { modelConfigId: body.modelConfigId, modelName: body.modelName, effort: body.effort })
   }
 
   @Delete(':id')

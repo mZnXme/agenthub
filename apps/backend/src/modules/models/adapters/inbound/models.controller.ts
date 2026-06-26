@@ -18,6 +18,11 @@ export class ModelsController {
   @Get('model-configs')
   listConfigs() { return this.models.listConfigs() }
 
+  @Get('user/models')
+  listUserModels(@Request() req: { user: { id: string } }) {
+    return this.models.listUserModels(req.user.id)
+  }
+
   @Post('model-configs')
   @UseGuards(AdminGuard)
   createConfig(@Body() body: CreateModelConfigDto) {

@@ -7,7 +7,7 @@ export class SessionsService {
 
   findByUser(userId: string) { return this.sessions.findByUser(userId) }
   create(userId: string, title?: string) { return this.sessions.create(userId, title) }
-  sendMessage(id: string, userId: string, content: string, options?: { modelConfigId?: string; effort?: string }) { return this.sessions.sendMessage(id, userId, content, options) }
+  sendMessage(id: string, userId: string, content: string, options?: { modelConfigId?: string; modelName?: string; effort?: string }) { return this.sessions.sendMessage(id, userId, content, options) }
   listMessages(id: string, userId: string) { return this.sessions.listMessages(id, userId) }
   remove(id: string, userId: string) { return this.sessions.remove(id, userId) }
   streamEvents(id: string, userId: string) { return this.sessions.streamEvents(id, userId) }

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useFileUpload } from '@/features/files/application/use-file-upload'
 import { providersService } from '@/features/providers/infrastructure/providers.service'
-import { settingsService, type ModelConfig, type Preference } from '@/features/settings/infrastructure/settings.service'
+import { settingsService, type Preference, type UserModelOption } from '@/features/settings/infrastructure/settings.service'
 import { usageService, type UsageData } from '@/features/usage/infrastructure/usage.service'
 import { streamEvents } from '../infrastructure/events.service'
 import { messagesService, type Message } from '../infrastructure/messages.service'
@@ -18,8 +18,8 @@ export function useChatSession(sessionId: string) {
   const [loading, setLoading] = useState(false)
   const [creating, setCreating] = useState(false)
   const [hasProvider, setHasProvider] = useState(false)
-  const [models, setModels] = useState<ModelConfig[]>([])
-  const [modelConfigId, setModelConfigId] = useState('')
+  const [models, setModels] = useState<UserModelOption[]>([])
+  const [modelName, setModelName] = useState('')
   const [modelPreference, setModelPreference] = useState<Preference>({})
   const [effort, setEffort] = useState('auto')
   const [usage, setUsage] = useState<UsageData | null>(null)
@@ -30,11 +30,12 @@ export function useChatSession(sessionId: string) {
   useEffect(() => {
     sessionsService.list().then(setSessions)
     providersService.list().then((items) => setHasProvider(items.some((provider) => provider.connectedViaOpenCode || provider.apiKeyMasked))).catch(() => setHasProvider(false))
-    Promise.all([settingsService.models(), settingsService.preference()])
+    Promise.all([settingsService.userModels(), settingsService.preference()])
       .then(([modelList, preference]) => {
-        setModels(modelList ?? [])
+        const enabledModels = (modelList ?? []).filter((model) => model.enabled)
+        setModels(enabledModels)
         setModelPreference(preference ?? {})
-        setModelConfigId(preference?.modelConfigId ?? '')
+        setModelName(preference?.modelName && enabledModels.some((model) => model.id === preference.modelName) ? preference.modelName : '')
       })
       .catch(() => null)
     usageService.get().then(setUsage).catch(() => null)
@@ -89,7 +90,7 @@ export function useChatSession(sessionId: string) {
     setInput('')
     setLoading(true)
     try {
-      void messagesService.send(sessionId, content, { modelConfigId: modelConfigId || undefined, effort })
+      void messagesService.send(sessionId, content, { modelName: modelName || undefined, effort })
       setMessages((current) => [...current, { role: 'assistant', content: '' }])
       await streamEvents(sessionId, (text) =>
         setMessages((current) => {
@@ -111,15 +112,15 @@ export function useChatSession(sessionId: string) {
     setInput((current) => `${current}${current ? '\n' : ''}[Attached file: ${uploaded.filename}]`)
   }
 
-  function selectModel(nextModelConfigId: string) {
-    setModelConfigId(nextModelConfigId)
-    const nextPreference = { ...modelPreference, modelConfigId: nextModelConfigId || undefined }
+  function selectModel(nextModelName: string) {
+    setModelName(nextModelName)
+    const nextPreference = { ...modelPreference, modelName: nextModelName || undefined }
     setModelPreference(nextPreference)
     settingsService.savePreference(nextPreference).catch(() => null)
   }
 
   return {
-    sessions, messages, input, setInput, loading, creating, hasProvider, models, modelConfigId, selectModel, effort, setEffort, usage, limitMsg, setLimitMsg, bottomRef,
+    sessions, messages, input, setInput, loading, creating, hasProvider, models, modelName, selectModel, effort, setEffort, usage, limitMsg, setLimitMsg, bottomRef,
     newChat, deleteSession, send, attachFile, fileUpload,
   }
 }

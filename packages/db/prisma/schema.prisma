@@ -175,6 +175,8 @@ model UserModelPreference {
   id            String       @id @default(uuid())
   userId        String       @unique
   modelConfigId String?
+  modelName     String?
+  enabledModels Json?
   compactAt     Float?
   user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   modelConfig   ModelConfig? @relation(fields: [modelConfigId], references: [id], onDelete: SetNull)

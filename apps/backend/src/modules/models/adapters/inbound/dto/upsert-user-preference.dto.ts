@@ -1,9 +1,18 @@
-import { IsNumber, IsOptional, IsString, Max, Min } from 'class-validator'
+import { IsArray, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator'
 
 export class UpsertUserPreferenceDto {
   @IsOptional()
   @IsString()
   modelConfigId?: string
+
+  @IsOptional()
+  @IsString()
+  modelName?: string
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  enabledModels?: string[]
 
   @IsOptional()
   @IsNumber()
