@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useProviders } from '@/features/providers/application/use-providers'
 
 const PROVIDERS = [
@@ -38,6 +39,7 @@ const MANUAL_PROVIDERS = [
 ]
 
 export default function ProvidersPage() {
+  const router = useRouter()
   const { providers, saving, connecting, connectState, error, upsert, remove, connect, checkConnect } = useProviders()
   const [manualOpen, setManualOpen] = useState(false)
   const [form, setForm] = useState({ providerId: 'anthropic', apiKey: '', baseUrl: '', label: '' })
@@ -48,6 +50,12 @@ export default function ProvidersPage() {
     const timer = setInterval(() => { void checkConnect(connectState.providerId) }, 2_500)
     return () => clearInterval(timer)
   }, [checkConnect, connectState])
+
+  useEffect(() => {
+    if (connectState?.status !== 'connected') return
+    const timer = setTimeout(() => router.push('/settings'), 1_200)
+    return () => clearTimeout(timer)
+  }, [connectState?.status, router])
 
   async function beginConnect(providerId: string) {
     if (providerId !== 'openai') {
@@ -69,6 +77,7 @@ export default function ProvidersPage() {
     })
     setForm((current) => ({ ...current, apiKey: '', baseUrl: '', label: '' }))
     setManualOpen(false)
+    router.push('/settings')
   }
 
   function providerStatus(providerId: string) {
@@ -109,10 +118,13 @@ export default function ProvidersPage() {
               <p style={s.deviceLabel}>OpenCode connect</p>
               <h2 style={s.deviceTitle}>{connectState.status === 'connected' ? 'Connected' : connectState.status === 'failed' ? 'Connection needs attention' : 'Authorize in your browser'}</h2>
               {connectState.error && <p style={s.deviceText}>{connectState.error}</p>}
+              {!connectState.error && connectState.status === 'connected' && <p style={s.deviceText}>Next, enable the OpenCode models you want to use. Taking you there now.</p>}
               {!connectState.error && connectState.status !== 'connected' && <p style={s.deviceText}>Open the auth page, enter the code, then return here. AgentHub will detect the completed OpenCode credential automatically.</p>}
             </div>
             {connectState.code && <div style={s.codeBox}>{connectState.code}</div>}
-            {connectState.url && <a style={s.authLink} href={connectState.url} target="_blank" rel="noreferrer">Open auth page</a>}
+            {connectState.status === 'connected'
+              ? <a style={s.authLink} href="/settings">Enable models</a>
+              : connectState.url && <a style={s.authLink} href={connectState.url} target="_blank" rel="noreferrer">Open auth page</a>}
           </section>
         )}
 
