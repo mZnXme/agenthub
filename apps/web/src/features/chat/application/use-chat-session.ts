@@ -14,6 +14,7 @@ export function useChatSession(sessionId: string) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [creating, setCreating] = useState(false)
   const [usage, setUsage] = useState<UsageData | null>(null)
   const [limitMsg, setLimitMsg] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -35,12 +36,16 @@ export function useChatSession(sessionId: string) {
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
   async function newChat() {
+    if (creating) return
+    setCreating(true)
     try {
       const session = await sessionsService.create()
       setSessions((prev) => [session, ...prev])
       router.push(`/chat/${session.id}`)
     } catch (e) {
       setLimitMsg(e instanceof Error ? e.message : 'Session limit reached')
+    } finally {
+      setCreating(false)
     }
   }
 
@@ -50,7 +55,7 @@ export function useChatSession(sessionId: string) {
     setSessions(remaining)
     if (id === sessionId) {
       if (remaining.length > 0) router.push(`/chat/${remaining[0].id}`)
-      else await newChat()
+      else router.push('/chat')
     }
   }
 
@@ -84,7 +89,7 @@ export function useChatSession(sessionId: string) {
   }
 
   return {
-    sessions, messages, input, setInput, loading, usage, limitMsg, setLimitMsg, bottomRef,
+    sessions, messages, input, setInput, loading, creating, usage, limitMsg, setLimitMsg, bottomRef,
     newChat, deleteSession, send, attachFile, fileUpload,
   }
 }

@@ -14,7 +14,9 @@ export default function ChatPage() {
         <div style={s.logo}>AgentHub</div>
         <a href="/mcp" style={s.navLink}>MCP Servers</a>
         <a href="/providers" style={s.navLink}>AI Providers</a>
-        <button style={s.newBtn} onClick={chat.newChat}>+ New chat</button>
+        <button style={{ ...s.newBtn, ...(chat.creating ? s.disabledBtn : {}) }} onClick={chat.newChat} disabled={chat.creating}>
+          {chat.creating ? 'Creating...' : '+ New chat'}
+        </button>
         <div style={s.sessionList}>
           {chat.sessions.map((session) => (
             <div key={session.id} style={{ ...s.sessionItem, ...(session.id === sessionId ? s.sessionActive : {}) }} onClick={() => router.push(`/chat/${session.id}`)}>
@@ -77,6 +79,7 @@ const s: Record<string, React.CSSProperties> = {
   logo: { fontWeight: 700, fontSize: 18, marginBottom: 12 },
   navLink: { color: '#aaa', textDecoration: 'none', fontSize: 14, padding: '6px 8px', borderRadius: 6 },
   newBtn: { padding: '8px 12px', background: '#5865f2', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' },
+  disabledBtn: { opacity: 0.6, cursor: 'not-allowed' },
   sessionList: { flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2, marginTop: 8 },
   sessionItem: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px', borderRadius: 6, cursor: 'pointer', color: '#aaa', fontSize: 13 },
   sessionActive: { background: '#1e1e2e', color: '#fff' },
