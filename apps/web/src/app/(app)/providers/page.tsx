@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { useProviders } from '@/features/providers/application/use-providers'
-import { useSettings } from '@/features/settings/application/use-settings'
 
 const PROVIDERS = [
   {
@@ -40,7 +39,6 @@ const MANUAL_PROVIDERS = [
 
 export default function ProvidersPage() {
   const { providers, saving, connecting, connectState, error, upsert, remove, connect, checkConnect } = useProviders()
-  const { models, preference, save: savePreference } = useSettings()
   const [manualOpen, setManualOpen] = useState(false)
   const [form, setForm] = useState({ providerId: 'anthropic', apiKey: '', baseUrl: '', label: '' })
   const selectedManualProvider = MANUAL_PROVIDERS.find((provider) => provider.id === form.providerId) ?? MANUAL_PROVIDERS[0]
@@ -98,20 +96,8 @@ export default function ProvidersPage() {
         <section style={s.hero}>
           <div>
             <p style={s.kicker}>Provider access</p>
-            <h1 style={s.heading}>Connect once. Pick a model. Start chatting.</h1>
+            <h1 style={s.heading}>Connect once. Choose model in chat.</h1>
             <p style={s.intro}>Use the OpenCode-style device flow when available. Manual API keys stay tucked away as a fallback for providers that need them.</p>
-          </div>
-          <div style={s.modelPanel}>
-            <label style={s.label}>Model used for chat</label>
-            <select
-              style={s.select}
-              value={preference.modelConfigId ?? ''}
-              onChange={(event) => void savePreference({ ...preference, modelConfigId: event.target.value || undefined })}
-            >
-              <option value="">Use OpenCode default</option>
-              {models.map((model) => <option key={model.id} value={model.id}>{model.name}</option>)}
-            </select>
-            <p style={s.help}>The provider prefix in the model id tells OpenCode which connected account to use.</p>
           </div>
         </section>
 
@@ -195,14 +181,10 @@ const s: Record<string, React.CSSProperties> = {
   navLink: { color: 'oklch(0.73 0.012 265)', textDecoration: 'none', fontSize: 14, padding: '6px 8px', borderRadius: 8 },
   navActive: { background: 'oklch(0.25 0.03 265)', color: 'oklch(0.96 0.006 265)' },
   main: { flex: 1, padding: '40px clamp(20px, 4vw, 56px)', overflowY: 'auto' },
-  hero: { display: 'grid', gridTemplateColumns: 'minmax(0, 1.25fr) minmax(260px, 420px)', gap: 28, alignItems: 'end', marginBottom: 28 },
+  hero: { display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 28, alignItems: 'end', marginBottom: 28 },
   kicker: { margin: '0 0 10px', color: 'oklch(0.72 0.12 250)', fontSize: 12, fontWeight: 800, letterSpacing: '0.16em', textTransform: 'uppercase' },
   heading: { margin: 0, maxWidth: 680, fontSize: 'clamp(34px, 5vw, 64px)', lineHeight: 0.95, letterSpacing: '-0.055em', fontWeight: 850 },
   intro: { margin: '18px 0 0', maxWidth: 620, color: 'oklch(0.74 0.015 265)', fontSize: 15, lineHeight: 1.65 },
-  modelPanel: { background: 'oklch(0.19 0.012 265)', border: '1px solid oklch(0.29 0.018 265)', borderRadius: 22, padding: 20, boxShadow: '0 24px 80px rgba(0,0,0,0.28)' },
-  label: { display: 'block', marginBottom: 8, color: 'oklch(0.76 0.018 265)', fontSize: 13, fontWeight: 700 },
-  select: { width: '100%', padding: '12px 14px', borderRadius: 14, border: '1px solid oklch(0.36 0.02 265)', background: 'oklch(0.13 0.01 265)', color: 'oklch(0.94 0.006 265)', fontSize: 14 },
-  help: { margin: '10px 0 0', color: 'oklch(0.66 0.014 265)', fontSize: 12, lineHeight: 1.55 },
   providerGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16, marginTop: 22 },
   providerCard: { minHeight: 240, background: 'oklch(0.18 0.01 265)', border: '1px solid oklch(0.28 0.015 265)', borderRadius: 26, padding: 22, display: 'flex', flexDirection: 'column', gap: 16 },
   providerCardConnected: { borderColor: 'oklch(0.61 0.16 155)', background: 'linear-gradient(180deg, oklch(0.21 0.032 155), oklch(0.18 0.01 265))' },

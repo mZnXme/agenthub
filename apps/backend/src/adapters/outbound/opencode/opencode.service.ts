@@ -28,11 +28,23 @@ export class OpenCodeService implements OpenCodeClientPort {
     return this.request(`/session/${id}`, { method: 'DELETE' }, baseUrl)
   }
 
-  sendMessage(sessionId: string, content: string, model?: string, baseUrl?: string): Promise<unknown> {
+  sendMessage(sessionId: string, content: string, model?: string, effort?: string, baseUrl?: string): Promise<unknown> {
+    const [providerID, modelID] = model?.split('/', 2) ?? []
+    const variant = this.variantFor(providerID, effort)
+    const modernBody = {
+      parts: [{ type: 'text', text: content }],
+      ...(providerID && modelID && { providerID, modelID }),
+      ...(variant && { variant }),
+    }
+    const legacyBody = { parts: [{ type: 'text', text: content }], model }
+
     return this.request(`/session/${sessionId}/message`, {
       method: 'POST',
-      body: JSON.stringify({ parts: [{ type: 'text', text: content }], model }),
-    }, baseUrl)
+      body: JSON.stringify(modernBody),
+    }, baseUrl).catch(() => this.request(`/session/${sessionId}/message`, {
+      method: 'POST',
+      body: JSON.stringify(legacyBody),
+    }, baseUrl))
   }
 
   listMessages(sessionId: string, baseUrl?: string): Promise<unknown> {
@@ -42,6 +54,14 @@ export class OpenCodeService implements OpenCodeClientPort {
   compact(sessionId: string, baseUrl?: string): Promise<unknown> {
     return this.request(`/session/${sessionId}/compact`, { method: 'POST' }, baseUrl)
       .catch(() => null) // best-effort — not all OpenCode versions support this
+  }
+
+  private variantFor(providerID?: string, effort?: string) {
+    if (!providerID || !effort || effort === 'auto') return undefined
+    if (providerID === 'openai') return effort === 'max' ? 'xhigh' : effort
+    if (providerID === 'anthropic') return ['high', 'max'].includes(effort) ? effort : undefined
+    if (providerID === 'google') return effort === 'max' ? 'high' : ['low', 'high'].includes(effort) ? effort : undefined
+    return undefined
   }
 
   addMcp(name: string, config: object, baseUrl?: string): Promise<unknown> {

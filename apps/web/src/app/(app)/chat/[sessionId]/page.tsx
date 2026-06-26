@@ -35,6 +35,26 @@ export default function ChatPage() {
         )}
       </aside>
       <main style={s.main}>
+        <div style={s.modelBar}>
+          <div style={s.modelControl}>
+            <span style={s.modelLabel}>Model</span>
+            <select style={s.modelSelect} value={chat.modelConfigId} onChange={(event) => chat.selectModel(event.target.value)}>
+              <option value="">OpenCode default</option>
+              {chat.models.map((model) => <option key={model.id} value={model.id}>{model.name}</option>)}
+            </select>
+          </div>
+          <div style={s.modelControl}>
+            <span style={s.modelLabel}>Effort</span>
+            <select style={s.effortSelect} value={chat.effort} onChange={(event) => chat.setEffort(event.target.value)}>
+              <option value="auto">Auto</option>
+              <option value="minimal">Minimal</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="max">Max</option>
+            </select>
+          </div>
+        </div>
         {chat.limitMsg && (
           <div style={s.modalOverlay}>
             <div style={s.modal}>
@@ -88,6 +108,11 @@ const s: Record<string, React.CSSProperties> = {
   sessionTitle: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 },
   deleteBtn: { background: 'none', border: 'none', color: '#555', cursor: 'pointer', fontSize: 16, padding: '0 2px', flexShrink: 0 },
   main: { flex: 1, display: 'flex', flexDirection: 'column' },
+  modelBar: { padding: '12px 16px', borderBottom: '1px solid #1e1e1e', display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'flex-end', background: '#0d0d0d' },
+  modelControl: { display: 'flex', alignItems: 'center', gap: 8 },
+  modelLabel: { color: '#777', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' },
+  modelSelect: { maxWidth: 320, padding: '7px 10px', borderRadius: 9, border: '1px solid #333', background: '#151515', color: '#f0f0f0', fontSize: 13 },
+  effortSelect: { padding: '7px 10px', borderRadius: 9, border: '1px solid #333', background: '#151515', color: '#f0f0f0', fontSize: 13 },
   messages: { flex: 1, overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 12 },
   bubble: { maxWidth: 720, padding: '10px 14px', borderRadius: 10, lineHeight: 1.6, whiteSpace: 'pre-wrap', fontSize: 14 },
   user: { background: '#5865f2', alignSelf: 'flex-end' },
