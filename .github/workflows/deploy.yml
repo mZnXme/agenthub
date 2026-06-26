@@ -15,8 +15,11 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /opt/agenthub
-            git pull origin main
-            docker compose -f docker-compose.prod.yml up --build -d
+            set -e
+            rm -rf /tmp/agenthub-deploy
+            git clone --depth 1 --branch main https://github.com/mZnXme/agenthub.git /tmp/agenthub-deploy
+            cp /opt/agenthub/.env /tmp/agenthub-deploy/.env
+            cd /tmp/agenthub-deploy
+            docker compose -p agenthub -f docker-compose.prod.yml --env-file .env up --build -d
             docker image prune -f
           envs: HOME=/home/deploy
