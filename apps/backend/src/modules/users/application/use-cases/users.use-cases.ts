@@ -9,10 +9,12 @@ export class UsersUseCases {
 
   async upsertFirebaseUser(data: FirebaseUserData) {
     const existing = await this.users.findByFirebaseUid(data.firebaseUid) as UserRecord | null
-    if (!existing) return this.users.createFirebaseUser(data)
-    return this.users.updateProfile(existing.id, {
-      name: data.name ?? existing.name,
-      picture: data.picture ?? existing.picture,
+    const user = existing ?? await this.users.findByEmail(data.email) as UserRecord | null
+    if (!user) return this.users.createFirebaseUser(data)
+    if (!existing) await this.users.linkFirebaseUid(user.id, data.firebaseUid)
+    return this.users.updateProfile(user.id, {
+      name: data.name ?? user.name,
+      picture: data.picture ?? user.picture,
     })
   }
 

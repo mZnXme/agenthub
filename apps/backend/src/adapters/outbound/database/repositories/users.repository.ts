@@ -10,8 +10,16 @@ export class PrismaUsersRepository implements UsersRepositoryPort {
     return this.prisma.user.findUnique({ where: { firebaseUid } })
   }
 
+  findByEmail(email: string) {
+    return this.prisma.user.findUnique({ where: { email } })
+  }
+
   createFirebaseUser(data: FirebaseUserData) {
     return this.prisma.user.create({ data })
+  }
+
+  linkFirebaseUid(id: string, firebaseUid: string) {
+    return this.prisma.user.update({ where: { id }, data: { firebaseUid } })
   }
 
   updateProfile(id: string, data: { name: string; picture?: string | null }) {
