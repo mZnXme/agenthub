@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useFileUpload } from '@/features/files/application/use-file-upload'
+import { providersService } from '@/features/providers/infrastructure/providers.service'
 import { usageService, type UsageData } from '@/features/usage/infrastructure/usage.service'
 import { streamEvents } from '../infrastructure/events.service'
 import { messagesService, type Message } from '../infrastructure/messages.service'
@@ -15,6 +16,7 @@ export function useChatSession(sessionId: string) {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [hasProvider, setHasProvider] = useState(false)
   const [usage, setUsage] = useState<UsageData | null>(null)
   const [limitMsg, setLimitMsg] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -22,6 +24,7 @@ export function useChatSession(sessionId: string) {
 
   useEffect(() => {
     sessionsService.list().then(setSessions)
+    providersService.list().then((items) => setHasProvider(items.length > 0)).catch(() => setHasProvider(false))
     usageService.get().then(setUsage).catch(() => null)
   }, [])
 
@@ -37,6 +40,10 @@ export function useChatSession(sessionId: string) {
 
   async function newChat() {
     if (creating) return
+    if (!hasProvider) {
+      router.push('/providers')
+      return
+    }
     setCreating(true)
     try {
       const session = await sessionsService.create()
@@ -61,6 +68,10 @@ export function useChatSession(sessionId: string) {
 
   async function send() {
     if (!input.trim() || !sessionId || loading) return
+    if (!hasProvider) {
+      setLimitMsg('Add an AI provider before sending messages.')
+      return
+    }
     const content = input
     setMessages((current) => [...current, { role: 'user', content }])
     setInput('')
@@ -89,7 +100,7 @@ export function useChatSession(sessionId: string) {
   }
 
   return {
-    sessions, messages, input, setInput, loading, creating, usage, limitMsg, setLimitMsg, bottomRef,
+    sessions, messages, input, setInput, loading, creating, hasProvider, usage, limitMsg, setLimitMsg, bottomRef,
     newChat, deleteSession, send, attachFile, fileUpload,
   }
 }

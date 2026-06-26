@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable } from '@nestjs/common'
 import { from, switchMap } from 'rxjs'
 import { SessionsRepositoryPort } from '../../../../application/ports/database/sessions.repository.port'
 import { OpenCodeClientPort } from '../../../../application/ports/opencode/opencode-client.port'
@@ -67,10 +67,14 @@ export class SessionsUseCases {
   }
 
   async sendMessage(id: string, userId: string, content: string) {
+    const providers = await this.providers.findByUser(userId)
+    if (!providers.length) throw new BadRequestException('Add an AI provider before sending messages.')
+
     await this.usage.checkLimit(userId, 'message')
     const session = await this.sessions.findByIdForUser(id, userId)
     const baseUrl = await this.getProcessUrl(userId)
-    const result = await this.openCode.sendMessage(session.openCodeSessionId, content, undefined, baseUrl)
+    const model = providers.find((provider) => provider.modelId)?.modelId ?? undefined
+    const result = await this.openCode.sendMessage(session.openCodeSessionId, content, model, baseUrl)
     await this.usage.record(userId, 'message')
 
     const tokenCount = (session.tokenCount ?? 0) + Math.ceil(content.length / 4)

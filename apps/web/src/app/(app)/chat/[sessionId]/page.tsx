@@ -54,6 +54,7 @@ export default function ChatPage() {
           <div ref={chat.bottomRef} />
         </div>
         <div style={s.inputRow}>
+          {!chat.hasProvider && <div style={s.providerNotice}>Add an AI provider before sending messages.</div>}
           <label style={s.attachBtn}>
             {chat.fileUpload.uploading ? 'Uploading...' : 'Attach'}
             <input type="file" style={{ display: 'none' }} onChange={(event) => { const file = event.target.files?.[0]; if (file) chat.attachFile(file).catch(() => null); event.currentTarget.value = '' }} />
@@ -66,7 +67,7 @@ export default function ChatPage() {
             placeholder="Message AgentHub..."
             rows={1}
           />
-          <button style={s.sendBtn} onClick={chat.send} disabled={chat.loading}>Send</button>
+          <button style={{ ...s.sendBtn, ...(!chat.hasProvider || chat.loading ? s.disabledBtn : {}) }} onClick={chat.send} disabled={!chat.hasProvider || chat.loading}>Send</button>
         </div>
       </main>
     </div>
@@ -90,7 +91,8 @@ const s: Record<string, React.CSSProperties> = {
   bubble: { maxWidth: 720, padding: '10px 14px', borderRadius: 10, lineHeight: 1.6, whiteSpace: 'pre-wrap', fontSize: 14 },
   user: { background: '#5865f2', alignSelf: 'flex-end' },
   assistant: { background: '#1e1e1e', alignSelf: 'flex-start' },
-  inputRow: { padding: 16, display: 'flex', gap: 8, borderTop: '1px solid #1e1e1e' },
+  inputRow: { padding: 16, display: 'flex', gap: 8, borderTop: '1px solid #1e1e1e', position: 'relative' },
+  providerNotice: { position: 'absolute', left: 16, bottom: 62, color: '#fbbf24', fontSize: 12, background: '#1c1917', border: '1px solid #78350f', borderRadius: 999, padding: '5px 10px' },
   textarea: { flex: 1, padding: '10px 14px', borderRadius: 10, border: '1px solid #333', background: '#111', color: '#f0f0f0', fontSize: 14, resize: 'none' },
   attachBtn: { padding: '10px 14px', border: '1px solid #333', color: '#ddd', background: '#161616', borderRadius: 10, cursor: 'pointer', fontWeight: 600, fontSize: 13 },
   sendBtn: { padding: '10px 20px', background: '#5865f2', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 600 },

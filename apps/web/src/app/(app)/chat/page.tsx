@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { sessionsService, type Session } from '@/features/chat/infrastructure/sessions.service'
+import { providersService } from '@/features/providers/infrastructure/providers.service'
 
 export default function ChatIndex() {
   const router = useRouter()
   const [sessions, setSessions] = useState<Session[]>([])
+  const [hasProvider, setHasProvider] = useState(false)
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -19,9 +21,10 @@ export default function ChatIndex() {
       setLoading(true)
       setError(null)
       try {
-        const list = await sessionsService.list()
+        const [list, providers] = await Promise.all([sessionsService.list(), providersService.list()])
         if (cancelled) return
         setSessions(list)
+        setHasProvider(providers.length > 0)
         if (list.length > 0) {
           router.replace(`/chat/${list[0].id}`)
           return
@@ -39,6 +42,10 @@ export default function ChatIndex() {
 
   async function startChat() {
     if (creating) return
+    if (!hasProvider) {
+      router.push('/providers')
+      return
+    }
     setCreating(true)
     setError(null)
     try {
@@ -78,7 +85,9 @@ export default function ChatIndex() {
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-neutral-500">No chat selected</p>
         <h1 className="mt-4 text-2xl font-semibold text-neutral-50">Start when you are ready</h1>
         <p className="mt-3 text-sm leading-6 text-neutral-400">
-          {sessions.length === 0
+          {!hasProvider
+            ? 'Add an AI provider first. Chat uses that encrypted key and model id to call OpenCode.'
+            : sessions.length === 0
             ? 'Create a chat only when you need one. This keeps your session quota under control.'
             : 'Choose an existing chat from the sidebar, or create a new one.'}
         </p>
@@ -88,7 +97,7 @@ export default function ChatIndex() {
           disabled={creating}
           className="mt-6 rounded-full bg-neutral-100 px-5 py-2 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-300 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {creating ? 'Creating...' : 'New chat'}
+          {!hasProvider ? 'Set up provider' : creating ? 'Creating...' : 'New chat'}
         </button>
       </section>
     </main>
