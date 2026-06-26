@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { AppSidebar } from '@/components/app-sidebar'
 import { useMcpServers } from '@/features/mcp/application/use-mcp-servers'
 
 export default function McpPage() {
@@ -25,78 +26,60 @@ export default function McpPage() {
   }
 
   return (
-    <div style={s.page}>
-      <h1 style={s.title}>MCP Servers</h1>
-      {error && <p style={s.error}>{error}</p>}
-      <div style={s.grid}>
-        <section style={s.card}>
-          <h2 style={s.sub}>Install from catalog</h2>
-          <select style={s.input} value={selectedSlug} onChange={(e) => { setSelectedSlug(e.target.value); setSecrets({}) }}>
-            {catalog.map((item) => <option key={item.slug} value={item.slug}>{item.name}</option>)}
-          </select>
-          {selected && <p style={s.desc}>{selected.description}</p>}
-          {selected?.secretFields?.map((field) => (
-            <input
-              key={field.name}
-              style={s.input}
-              type="password"
-              placeholder={field.label}
-              value={secrets[field.name] ?? ''}
-              onChange={(e) => setSecrets((current) => ({ ...current, [field.name]: e.target.value }))}
-            />
-          ))}
-          <button style={s.btn} onClick={installSelected} disabled={isPending || !selected}>Install</button>
-        </section>
-        <section style={s.card}>
-          <h2 style={s.sub}>Add allowed custom server</h2>
-          <input style={s.input} placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          <select style={s.input} value={form.transport} onChange={(e) => setForm({ ...form, transport: e.target.value })}>
-            <option value="stdio">stdio allowlist</option>
-            <option value="sse">sse https</option>
-            <option value="http">http https</option>
-          </select>
-          {form.transport === 'stdio'
-            ? <input style={s.input} placeholder="Command must match catalog allowlist" value={form.command} onChange={(e) => setForm({ ...form, command: e.target.value })} />
-            : <input style={s.input} placeholder="https://..." value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} />}
-          <button style={s.btn} onClick={addCustom}>Add</button>
-        </section>
-      </div>
-      <div style={s.list}>
-        {servers.map((server) => (
-          <div key={server.id} style={s.row}>
+    <div className="app-shell">
+      <AppSidebar />
+      <main className="workspace">
+        <div className="page-grid">
+          <section className="hero-row">
             <div>
-              <b>{server.name}</b>
-              <span style={s.badge}>{server.transport}</span>
-              {server.catalogSlug && <span style={s.badge}>{server.catalogSlug}</span>}
-              <p style={s.cmd}>{server.command ?? server.url}</p>
-              {Boolean(server.secretEnvKeys?.length) && <p style={s.secret}>secrets configured: {server.secretEnvKeys?.join(', ')}</p>}
+              <p className="eyebrow">tool runtime</p>
+              <h1 className="page-title">Attach MCP servers without losing control.</h1>
+              <p className="page-copy">Install curated local tools, inject encrypted secrets, and keep every server toggle explicit.</p>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button style={s.toggleBtn} onClick={() => toggle(server.id, !server.enabled)}>{server.enabled ? 'Disable' : 'Enable'}</button>
-              <button style={s.removeBtn} onClick={() => remove(server.id)}>Remove</button>
+            <div className="metric-strip"><span>{servers.filter((server) => server.enabled).length} active</span><span>{catalog.length} catalog items</span></div>
+          </section>
+
+          {error && <p className="error">{error}</p>}
+
+          <section className="grid-2">
+            <div className="panel pad stack">
+              <div><p className="eyebrow">catalog</p><h2 className="panel-title">Install curated server</h2></div>
+              <select className="select" value={selectedSlug} onChange={(event) => { setSelectedSlug(event.target.value); setSecrets({}) }}>{catalog.map((item) => <option key={item.slug} value={item.slug}>{item.name}</option>)}</select>
+              {selected && <p className="panel-copy">{selected.description}</p>}
+              {selected?.secretFields?.map((field) => <input key={field.name} className="input" type="password" placeholder={field.label} value={secrets[field.name] ?? ''} onChange={(event) => setSecrets((current) => ({ ...current, [field.name]: event.target.value }))} />)}
+              <button className="btn primary" onClick={installSelected} disabled={isPending || !selected}>Install</button>
             </div>
-          </div>
-        ))}
-      </div>
+
+            <div className="panel pad stack">
+              <div><p className="eyebrow">allowlist</p><h2 className="panel-title">Add custom server</h2></div>
+              <input className="input" placeholder="Name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
+              <select className="select" value={form.transport} onChange={(event) => setForm({ ...form, transport: event.target.value })}>
+                <option value="stdio">stdio allowlist</option>
+                <option value="sse">sse https</option>
+                <option value="http">http https</option>
+              </select>
+              {form.transport === 'stdio'
+                ? <input className="input" placeholder="Command must match catalog allowlist" value={form.command} onChange={(event) => setForm({ ...form, command: event.target.value })} />
+                : <input className="input" placeholder="https://..." value={form.url} onChange={(event) => setForm({ ...form, url: event.target.value })} />}
+              <button className="btn primary" onClick={addCustom}>Add server</button>
+            </div>
+          </section>
+
+          <section className="panel pad stack">
+            <div><p className="eyebrow">installed</p><h2 className="panel-title">Runtime servers</h2></div>
+            {servers.map((server) => (
+              <div key={server.id} className="row">
+                <div>
+                  <div className="cluster"><strong>{server.name}</strong><span className="pill">{server.transport}</span>{server.catalogSlug && <span className="pill">{server.catalogSlug}</span>}{server.enabled && <span className="pill on">enabled</span>}</div>
+                  <p className="panel-copy">{server.command ?? server.url}</p>
+                  {Boolean(server.secretEnvKeys?.length) && <p className="success">secrets configured: {server.secretEnvKeys?.join(', ')}</p>}
+                </div>
+                <div className="cluster"><button className="btn ghost" onClick={() => toggle(server.id, !server.enabled)}>{server.enabled ? 'Disable' : 'Enable'}</button><button className="btn danger" onClick={() => remove(server.id)}>Remove</button></div>
+              </div>
+            ))}
+          </section>
+        </div>
+      </main>
     </div>
   )
-}
-
-const s: Record<string, React.CSSProperties> = {
-  page: { padding: 32, maxWidth: 980, margin: '0 auto' },
-  title: { fontSize: 24, fontWeight: 800, marginBottom: 24 },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, marginBottom: 24 },
-  card: { background: '#12121a', border: '1px solid #242436', borderRadius: 14, padding: 20, display: 'flex', flexDirection: 'column', gap: 10 },
-  sub: { fontSize: 15, fontWeight: 700 },
-  desc: { color: '#9ca3af', fontSize: 13, lineHeight: 1.5 },
-  input: { padding: '9px 12px', borderRadius: 8, border: '1px solid #333', background: '#0b0b10', color: '#f0f0f0', fontSize: 14 },
-  btn: { padding: '9px 16px', background: '#5865f2', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 700 },
-  list: { display: 'flex', flexDirection: 'column', gap: 10 },
-  row: { background: '#12121a', border: '1px solid #242436', borderRadius: 12, padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 },
-  badge: { marginLeft: 8, padding: '2px 8px', background: '#2a2a3e', borderRadius: 99, fontSize: 11, color: '#c7d2fe' },
-  cmd: { color: '#888', fontSize: 12, marginTop: 4 },
-  secret: { color: '#60a5fa', fontSize: 12, marginTop: 4 },
-  error: { color: '#f87171', marginBottom: 12 },
-  toggleBtn: { padding: '6px 12px', border: '1px solid #444', borderRadius: 6, background: 'transparent', color: '#ccc', cursor: 'pointer' },
-  removeBtn: { padding: '6px 12px', border: '1px solid #7f1d1d', borderRadius: 6, background: 'transparent', color: '#f87171', cursor: 'pointer' },
 }

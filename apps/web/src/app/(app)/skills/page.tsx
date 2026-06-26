@@ -1,41 +1,41 @@
 'use client'
 
+import { AppSidebar } from '@/components/app-sidebar'
 import { useSkills } from '@/features/skills/application/use-skills'
 
 export default function SkillsPage() {
   const { skills, error, toggle } = useSkills()
 
   return (
-    <div style={s.page}>
-      <h1 style={s.title}>Skills</h1>
-      <p style={s.desc}>เปิด/ปิด agent skills สำหรับ session ใหม่</p>
-      {error && <p style={s.error}>{error}</p>}
-      <div style={s.grid}>
-        {skills.map((skill) => (
-          <div key={skill.id} style={{ ...s.card, borderColor: skill.enabled ? '#5865f2' : '#333' }}>
-            <div style={s.cardTop}>
-              <span style={s.name}>{skill.name}</span>
-              <button style={{ ...s.toggle, background: skill.enabled ? '#5865f2' : '#222', color: skill.enabled ? '#fff' : '#888' }} onClick={() => toggle(skill)}>
-                {skill.enabled ? 'Enabled' : 'Disabled'}
-              </button>
+    <div className="app-shell">
+      <AppSidebar />
+      <main className="workspace">
+        <div className="page-grid">
+          <section className="hero-row">
+            <div>
+              <p className="eyebrow">agent behavior</p>
+              <h1 className="page-title">Switch on the skills each new session can use.</h1>
+              <p className="page-copy">Skills are capability toggles for the OpenCode runtime. Keep the default surface small, then add powers deliberately.</p>
             </div>
-            {skill.description && <p style={s.cardDesc}>{skill.description}</p>}
-          </div>
-        ))}
-      </div>
+            <div className="metric-strip"><span>{skills.filter((skill) => skill.enabled).length} enabled</span><span>{skills.length} installed</span></div>
+          </section>
+
+          {error && <p className="error">{error}</p>}
+
+          <section className="grid-2">
+            {skills.map((skill) => (
+              <article key={skill.id} className="panel pad stack" style={{ borderColor: skill.enabled ? 'color-mix(in oklch, var(--green) 54%, var(--line))' : undefined }}>
+                <div className="cluster" style={{ justifyContent: 'space-between' }}>
+                  <span className="eyebrow">skill</span>
+                  <button className={`btn ${skill.enabled ? 'primary' : 'ghost'}`} onClick={() => toggle(skill)}>{skill.enabled ? 'Enabled' : 'Disabled'}</button>
+                </div>
+                <h2 className="panel-title">{skill.name}</h2>
+                {skill.description && <p className="panel-copy">{skill.description}</p>}
+              </article>
+            ))}
+          </section>
+        </div>
+      </main>
     </div>
   )
-}
-
-const s: Record<string, React.CSSProperties> = {
-  page: { padding: 32, maxWidth: 760, margin: '0 auto' },
-  title: { fontSize: 22, fontWeight: 700, marginBottom: 6 },
-  desc: { color: '#888', fontSize: 14, marginBottom: 24 },
-  grid: { display: 'flex', flexDirection: 'column', gap: 12 },
-  card: { background: '#1a1a1a', borderRadius: 10, padding: '16px 20px', border: '1px solid #333' },
-  cardTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  name: { fontWeight: 600, fontSize: 15 },
-  toggle: { padding: '6px 14px', borderRadius: 6, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13, transition: 'all 0.15s' },
-  cardDesc: { color: '#888', fontSize: 13, marginTop: 6 },
-  error: { color: '#f87171', fontSize: 13 },
 }

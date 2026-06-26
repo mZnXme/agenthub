@@ -26,24 +26,14 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={styles.page}>
-      <div style={styles.card}>
-        <h1 style={styles.title}>AgentHub</h1>
-        <p style={styles.sub}>AI agent platform with MCP — in your browser</p>
-        {error && <p style={styles.error}>{error}</p>}
-        <button style={styles.btn} onClick={handleGoogle} disabled={loading}>
-          {loading ? 'Signing in…' : 'Continue with Google'}
-        </button>
-      </div>
-    </div>
+    <main className="auth-shell">
+      <section className="panel pad auth-card stack">
+        <p className="eyebrow">agent workspace</p>
+        <h1 className="page-title" style={{ fontSize: 44 }}>AgentHub</h1>
+        <p className="page-copy">A browser console for OpenCode sessions, provider auth, model routing, MCP tools, and skills.</p>
+        {error && <p className="error">{error}</p>}
+        <button className="btn primary" onClick={handleGoogle} disabled={loading}>{loading ? 'Signing in...' : 'Continue with Google'}</button>
+      </section>
+    </main>
   )
-}
-
-const styles: Record<string, React.CSSProperties> = {
-  page: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  card: { display: 'flex', flexDirection: 'column', gap: 16, width: 360, padding: 32, background: '#1a1a1a', borderRadius: 12 },
-  title: { fontSize: 24, fontWeight: 700 },
-  sub: { color: '#888', fontSize: 13, marginBottom: 8 },
-  btn: { padding: '10px 14px', borderRadius: 8, background: '#4285f4', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 15 },
-  error: { color: '#f87171', fontSize: 13 },
 }

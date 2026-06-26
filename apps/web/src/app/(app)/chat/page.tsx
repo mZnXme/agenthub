@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { AppSidebar } from '@/components/app-sidebar'
 import { sessionsService, type Session } from '@/features/chat/infrastructure/sessions.service'
 import { providersService } from '@/features/providers/infrastructure/providers.service'
 
@@ -16,7 +17,6 @@ export default function ChatIndex() {
 
   useEffect(() => {
     let cancelled = false
-
     async function loadSessions() {
       setLoading(true)
       setError(null)
@@ -25,17 +25,13 @@ export default function ChatIndex() {
         if (cancelled) return
         setSessions(list)
         setHasProvider(providers.some((provider) => provider.connectedViaOpenCode || provider.apiKeyMasked))
-        if (list.length > 0) {
-          router.replace(`/chat/${list[0].id}`)
-          return
-        }
+        if (list.length > 0) router.replace(`/chat/${list[0].id}`)
       } catch {
         if (!cancelled) setError('Could not load your chat sessions. Please try again.')
       } finally {
         if (!cancelled) setLoading(false)
       }
     }
-
     loadSessions()
     return () => { cancelled = true }
   }, [router, retryKey])
@@ -58,48 +54,19 @@ export default function ChatIndex() {
     }
   }
 
-  if (error) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-neutral-950 px-6 text-neutral-100">
-        <section className="max-w-md rounded-3xl border border-neutral-800 bg-neutral-900/80 p-8 text-center shadow-2xl shadow-black/30">
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-neutral-500">Session unavailable</p>
-          <h1 className="mt-4 text-2xl font-semibold text-neutral-50">Chat is unavailable</h1>
-          <p className="mt-3 text-sm leading-6 text-neutral-400">{error}</p>
-          <button
-            type="button"
-            onClick={() => setRetryKey((value) => value + 1)}
-            className="mt-6 rounded-full bg-neutral-100 px-5 py-2 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-300"
-          >
-            Retry
-          </button>
+  return (
+    <div className="app-shell">
+      <AppSidebar />
+      <main className="workspace" style={{ display: 'grid', placeItems: 'center' }}>
+        <section className="panel pad stack" style={{ width: 'min(520px, 100%)', textAlign: 'center' }}>
+          <p className="eyebrow">{error ? 'session unavailable' : loading ? 'loading workspace' : 'no chat selected'}</p>
+          <h1 className="page-title" style={{ fontSize: 40 }}>{error ? 'Chat is unavailable' : loading ? 'Preparing AgentHub' : 'Start when you are ready'}</h1>
+          <p className="page-copy" style={{ marginLeft: 'auto', marginRight: 'auto' }}>
+            {error ?? (loading ? 'Checking sessions and provider credentials.' : !hasProvider ? 'Connect an AI provider first, then enable the models you want in Settings.' : sessions.length === 0 ? 'Create a chat only when you need one. This keeps session quota under control.' : 'Choose an existing chat from the sidebar, or create a new one.')}
+          </p>
+          <button className="btn primary" onClick={error ? () => setRetryKey((value) => value + 1) : startChat} disabled={loading || creating}>{error ? 'Retry' : !hasProvider ? 'Set up provider' : creating ? 'Creating...' : 'New chat'}</button>
         </section>
       </main>
-    )
-  }
-
-  if (loading) return <div className="flex min-h-screen items-center justify-center bg-neutral-950 text-neutral-500">Loading...</div>
-
-  return (
-    <main className="flex min-h-screen items-center justify-center bg-neutral-950 px-6 text-neutral-100">
-      <section className="max-w-md rounded-3xl border border-neutral-800 bg-neutral-900/80 p-8 text-center shadow-2xl shadow-black/30">
-        <p className="text-sm font-medium uppercase tracking-[0.2em] text-neutral-500">No chat selected</p>
-        <h1 className="mt-4 text-2xl font-semibold text-neutral-50">Start when you are ready</h1>
-        <p className="mt-3 text-sm leading-6 text-neutral-400">
-          {!hasProvider
-            ? 'Add an AI provider first. Chat uses that encrypted key, then applies the model selected in Settings.'
-            : sessions.length === 0
-            ? 'Create a chat only when you need one. This keeps your session quota under control.'
-            : 'Choose an existing chat from the sidebar, or create a new one.'}
-        </p>
-        <button
-          type="button"
-          onClick={startChat}
-          disabled={creating}
-          className="mt-6 rounded-full bg-neutral-100 px-5 py-2 text-sm font-semibold text-neutral-950 transition hover:bg-neutral-300 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {!hasProvider ? 'Set up provider' : creating ? 'Creating...' : 'New chat'}
-        </button>
-      </section>
-    </main>
+    </div>
   )
 }
