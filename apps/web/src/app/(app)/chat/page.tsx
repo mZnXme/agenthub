@@ -86,7 +86,7 @@ export default function ChatIndex() {
         <h1 className="mt-4 text-2xl font-semibold text-neutral-50">Start when you are ready</h1>
         <p className="mt-3 text-sm leading-6 text-neutral-400">
           {!hasProvider
-            ? 'Add an AI provider first. Chat uses that encrypted key and model id to call OpenCode.'
+            ? 'Add an AI provider first. Chat uses that encrypted key, then applies the model selected in Settings.'
             : sessions.length === 0
             ? 'Create a chat only when you need one. This keeps your session quota under control.'
             : 'Choose an existing chat from the sidebar, or create a new one.'}

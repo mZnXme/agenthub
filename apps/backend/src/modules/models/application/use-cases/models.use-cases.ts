@@ -12,12 +12,20 @@ export class ModelsUseCases {
   getPreference(userId: string) { return this.models.getPreference(userId) }
   upsertPreference(userId: string, data: PreferenceInput) { return this.models.upsertPreference(userId, data) }
 
-  async getEffectiveThreshold(userId: string, modelConfigId?: string): Promise<{ contextLimit: number; compactAt: number } | null> {
+  async getEffectiveThreshold(userId: string, modelConfigId?: string | null): Promise<{ contextLimit: number; compactAt: number } | null> {
     const pref = await this.models.getPreference(userId)
     const configId = pref?.modelConfigId ?? modelConfigId
     if (!configId) return null
     const config = await this.models.findConfigById(configId)
     if (!config) return null
     return { contextLimit: config.contextLimit, compactAt: pref?.compactAt ?? config.compactAt }
+  }
+
+  async getEffectiveModelName(userId: string, modelConfigId?: string | null): Promise<string | null> {
+    const pref = await this.models.getPreference(userId)
+    const configId = pref?.modelConfigId ?? modelConfigId
+    if (!configId) return null
+    const config = await this.models.findConfigById(configId)
+    return config?.name ?? null
   }
 }

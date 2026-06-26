@@ -8,35 +8,31 @@ const PROVIDERS = [
     id: 'anthropic',
     name: 'Anthropic',
     keyUrl: 'https://console.anthropic.com/settings/keys',
-    modelExample: 'anthropic/claude-sonnet-4-20250514',
     note: 'Best default for coding agents and long-running reasoning.',
   },
   {
     id: 'openai',
     name: 'OpenAI',
     keyUrl: 'https://platform.openai.com/api-keys',
-    modelExample: 'openai/gpt-4.1',
     note: 'Use when your OpenCode setup should call OpenAI models.',
   },
   {
     id: 'google',
     name: 'Google',
     keyUrl: 'https://aistudio.google.com/app/apikey',
-    modelExample: 'google/gemini-2.5-pro',
     note: 'Use Gemini API keys from Google AI Studio.',
   },
   {
     id: 'custom',
     name: 'Custom endpoint',
     keyUrl: '',
-    modelExample: 'provider/model-name',
     note: 'Use this for OpenAI-compatible gateways. Base URL is required.',
   },
 ]
 
 export default function ProvidersPage() {
   const { providers, saving, error, upsert, remove } = useProviders()
-  const [form, setForm] = useState({ providerId: 'anthropic', apiKey: '', baseUrl: '', modelId: '', label: '' })
+  const [form, setForm] = useState({ providerId: 'anthropic', apiKey: '', baseUrl: '', label: '' })
   const selectedProvider = PROVIDERS.find((provider) => provider.id === form.providerId) ?? PROVIDERS[0]
 
   async function save() {
@@ -46,9 +42,8 @@ export default function ProvidersPage() {
       apiKey: form.apiKey,
       ...(form.label && { label: form.label }),
       ...(form.baseUrl && { baseUrl: form.baseUrl }),
-      ...(form.modelId && { modelId: form.modelId }),
     })
-    setForm((current) => ({ ...current, apiKey: '', baseUrl: '', modelId: '', label: '' }))
+    setForm((current) => ({ ...current, apiKey: '', baseUrl: '', label: '' }))
   }
 
   return (
@@ -58,18 +53,19 @@ export default function ProvidersPage() {
         <a href="/chat" style={s.navLink}>Chat</a>
         <a href="/mcp" style={s.navLink}>MCP Servers</a>
         <a href="/providers" style={{ ...s.navLink, ...s.navActive }}>AI Providers</a>
+        <a href="/settings" style={s.navLink}>Settings</a>
       </aside>
       <main style={s.main}>
         <h2 style={s.heading}>AI Providers</h2>
         <section style={s.guideBox}>
           <div>
             <h3 style={s.guideTitle}>Required before chat can answer</h3>
-            <p style={s.guideText}>AgentHub stores your API key encrypted, injects it into OpenCode when a chat starts, and uses the default model id you set here when sending messages.</p>
+            <p style={s.guideText}>AgentHub stores your API key encrypted and injects it into OpenCode when a chat starts. Choose the actual chat model from Settings after connecting a provider.</p>
           </div>
           <ol style={s.steps}>
             <li>Pick a provider.</li>
             <li>Open that provider's key page and create a secret API key.</li>
-            <li>Paste the key, set the model id, then save.</li>
+            <li>Paste the key, save, then choose the model in Settings.</li>
           </ol>
         </section>
         {error && <p style={s.error}>{error}</p>}
@@ -83,7 +79,6 @@ export default function ProvidersPage() {
                 </div>
                 {provider.label && <div style={s.cardMeta}>{provider.label}</div>}
                 <div style={s.cardMeta}>{provider.apiKeyMasked}</div>
-                {provider.modelId && <div style={s.cardMeta}>Model: {provider.modelId}</div>}
                 {provider.baseUrl && <div style={s.cardMeta}>{provider.baseUrl}</div>}
                 <button style={s.removeBtn} onClick={() => remove(provider.id)}>Remove</button>
               </div>
@@ -98,11 +93,11 @@ export default function ProvidersPage() {
           </select>
           {selectedProvider.keyUrl && <a style={s.keyLink} href={selectedProvider.keyUrl} target="_blank" rel="noreferrer">Get {selectedProvider.name} API key</a>}
           <input style={s.input} type="password" placeholder="API key" value={form.apiKey} onChange={(e) => setForm((current) => ({ ...current, apiKey: e.target.value }))} />
-          <input style={s.input} type="text" placeholder={`Default model id, e.g. ${selectedProvider.modelExample}`} value={form.modelId} onChange={(e) => setForm((current) => ({ ...current, modelId: e.target.value }))} />
           {form.providerId === 'custom' && (
             <input style={s.input} type="text" placeholder="Base URL (https://...)" value={form.baseUrl} onChange={(e) => setForm((current) => ({ ...current, baseUrl: e.target.value }))} />
           )}
           <input style={s.input} type="text" placeholder="Label (optional)" value={form.label} onChange={(e) => setForm((current) => ({ ...current, label: e.target.value }))} />
+          <a style={s.keyLink} href="/settings">Choose chat model in Settings</a>
           <button style={s.saveBtn} onClick={save} disabled={saving || !form.apiKey.trim()}>{saving ? 'Saving...' : 'Save'}</button>
         </div>
       </main>

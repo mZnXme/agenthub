@@ -73,7 +73,9 @@ export class SessionsUseCases {
     await this.usage.checkLimit(userId, 'message')
     const session = await this.sessions.findByIdForUser(id, userId)
     const baseUrl = await this.getProcessUrl(userId)
-    const model = providers.find((provider) => provider.modelId)?.modelId ?? undefined
+    const selectedModel = await this.models.getEffectiveModelName(userId, session.modelConfigId)
+    const legacyProviderModel = providers.find((provider) => provider.modelId)?.modelId ?? undefined
+    const model = selectedModel ?? legacyProviderModel
     const result = await this.openCode.sendMessage(session.openCodeSessionId, content, model, baseUrl)
     await this.usage.record(userId, 'message')
 

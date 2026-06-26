@@ -51,6 +51,23 @@ async function main() {
       create: skill,
     })
   }
+
+  const models = [
+    { id: 'model-anthropic-claude-sonnet-4', name: 'anthropic/claude-sonnet-4-20250514', contextLimit: 200000, compactAt: 0.8 },
+    { id: 'model-anthropic-claude-opus-4', name: 'anthropic/claude-opus-4-20250514', contextLimit: 200000, compactAt: 0.8 },
+    { id: 'model-openai-gpt-4-1', name: 'openai/gpt-4.1', contextLimit: 1047576, compactAt: 0.8 },
+    { id: 'model-openai-gpt-4-1-mini', name: 'openai/gpt-4.1-mini', contextLimit: 1047576, compactAt: 0.8 },
+    { id: 'model-google-gemini-2-5-pro', name: 'google/gemini-2.5-pro', contextLimit: 1048576, compactAt: 0.8 },
+    { id: 'model-google-gemini-2-5-flash', name: 'google/gemini-2.5-flash', contextLimit: 1048576, compactAt: 0.8 },
+  ]
+
+  for (const model of models) {
+    await prisma.modelConfig.upsert({
+      where: { name: model.name },
+      update: { contextLimit: model.contextLimit, compactAt: model.compactAt },
+      create: model,
+    })
+  }
 }
 
 main()

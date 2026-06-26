@@ -8,7 +8,7 @@ export default function SettingsPage() {
   return (
     <div style={s.page}>
       <h2 style={s.heading}>Settings</h2>
-      <p style={s.intro}>Provider keys live in AI Providers. This page only controls optional chat behavior such as context limits and compaction thresholds.</p>
+      <p style={s.intro}>Provider keys live in AI Providers. Choose the model AgentHub sends to OpenCode here; the model id also selects the matching provider prefix such as anthropic, openai, or google.</p>
       {error && <p style={s.error}>{error}</p>}
       <div style={s.group}>
         <label style={s.label}>AI Model</label>
@@ -17,12 +17,12 @@ export default function SettingsPage() {
           value={preference.modelConfigId ?? ''}
           onChange={(e) => setPreference((current) => ({ ...current, modelConfigId: e.target.value || undefined }))}
         >
-          <option value="">— select model —</option>
+          <option value="">Use OpenCode default</option>
           {models.map((model) => (
             <option key={model.id} value={model.id}>{model.name} ({model.contextLimit.toLocaleString()} ctx)</option>
           ))}
         </select>
-        {models.length === 0 && <p style={s.help}>No admin model presets are configured yet. Chat will use the default model id saved on your AI Provider.</p>}
+        {models.length === 0 && <p style={s.help}>No model presets are configured yet. Chat will use OpenCode's default model.</p>}
       </div>
       <div style={s.group}>
         <label style={s.label}>Compact threshold (0.0 - 1.0)</label>

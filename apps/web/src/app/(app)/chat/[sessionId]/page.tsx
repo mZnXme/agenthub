@@ -14,6 +14,7 @@ export default function ChatPage() {
         <div style={s.logo}>AgentHub</div>
         <a href="/mcp" style={s.navLink}>MCP Servers</a>
         <a href="/providers" style={s.navLink}>AI Providers</a>
+        <a href="/settings" style={s.navLink}>Settings</a>
         <button style={{ ...s.newBtn, ...(chat.creating ? s.disabledBtn : {}) }} onClick={chat.newChat} disabled={chat.creating}>
           {chat.creating ? 'Creating...' : '+ New chat'}
         </button>

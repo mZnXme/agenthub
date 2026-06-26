@@ -20,6 +20,14 @@ jobs:
             git clone --depth 1 --branch main https://github.com/mZnXme/agenthub.git /tmp/agenthub-deploy
             cp /opt/agenthub/.env /tmp/agenthub-deploy/.env
             cd /tmp/agenthub-deploy
+            docker compose -p agenthub -f docker-compose.prod.yml --env-file .env up -d postgres minio
+            docker run --rm \
+              --network agenthub_default \
+              --env-file .env \
+              -v "$PWD:/app" \
+              -w /app \
+              node:20-alpine \
+              sh -lc 'export DATABASE_URL="postgresql://agenthub:${POSTGRES_PASSWORD}@postgres:5432/agenthub?schema=public" && npx -y prisma@6.19.0 migrate deploy --schema=packages/db/prisma/schema.prisma'
             docker compose -p agenthub -f docker-compose.prod.yml --env-file .env up --build -d
             docker image prune -f
           envs: HOME=/home/deploy
