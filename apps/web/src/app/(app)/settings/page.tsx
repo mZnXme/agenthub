@@ -3,27 +3,13 @@
 import { useSettings } from '@/features/settings/application/use-settings'
 
 export default function SettingsPage() {
-  const { models, preference, setPreference, saved, error, save } = useSettings()
+  const { preference, setPreference, saved, error, save } = useSettings()
 
   return (
     <div style={s.page}>
       <h2 style={s.heading}>Settings</h2>
-      <p style={s.intro}>Provider keys live in AI Providers. Choose the model AgentHub sends to OpenCode here; the model id also selects the matching provider prefix such as anthropic, openai, or google.</p>
+      <p style={s.intro}>Provider connection and model choice live in AI Providers. This page keeps secondary chat behavior only.</p>
       {error && <p style={s.error}>{error}</p>}
-      <div style={s.group}>
-        <label style={s.label}>AI Model</label>
-        <select
-          style={s.select}
-          value={preference.modelConfigId ?? ''}
-          onChange={(e) => setPreference((current) => ({ ...current, modelConfigId: e.target.value || undefined }))}
-        >
-          <option value="">Use OpenCode default</option>
-          {models.map((model) => (
-            <option key={model.id} value={model.id}>{model.name} ({model.contextLimit.toLocaleString()} ctx)</option>
-          ))}
-        </select>
-        {models.length === 0 && <p style={s.help}>No model presets are configured yet. Chat will use OpenCode's default model.</p>}
-      </div>
       <div style={s.group}>
         <label style={s.label}>Compact threshold (0.0 - 1.0)</label>
         <input
@@ -34,7 +20,7 @@ export default function SettingsPage() {
           onChange={(e) => setPreference((current) => ({ ...current, compactAt: e.target.value ? Number(e.target.value) : undefined }))}
         />
       </div>
-      <button style={s.btn} onClick={save}>{saved ? 'Saved!' : 'Save'}</button>
+      <button style={s.btn} onClick={() => save()}>{saved ? 'Saved!' : 'Save'}</button>
     </div>
   )
 }

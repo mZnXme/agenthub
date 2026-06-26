@@ -11,6 +11,12 @@ export class ProvidersService {
 
   findByUser(userId: string) { return this.providers.list(userId) }
 
+  hasCredential(userId: string) { return this.providers.hasCredential(userId) }
+
+  startConnect(userId: string, providerId: string) { return this.providers.startConnect(userId, providerId) }
+
+  connectStatus(userId: string, providerId: string) { return this.providers.connectStatus(userId, providerId) }
+
   getDecryptedKey(userId: string, providerId: string) { return this.providers.getDecryptedKey(userId, providerId) }
 
   remove(id: string, userId: string) { return this.providers.remove(id, userId) }

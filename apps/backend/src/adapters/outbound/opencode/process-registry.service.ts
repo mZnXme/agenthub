@@ -50,6 +50,12 @@ export class ProcessRegistryService implements OnApplicationShutdown, OpenCodePr
     const proc = spawn(opencodeBin, ['serve', '--port', String(port), '--hostname', '127.0.0.1'], {
       cwd: sessionDir,
       detached: false,
+      env: {
+        ...process.env,
+        HOME: sessionDir,
+        XDG_CONFIG_HOME: `${sessionDir}/.config`,
+        XDG_DATA_HOME: `${sessionDir}/.local/share`,
+      },
     })
 
     const entry: ProcessEntry = {

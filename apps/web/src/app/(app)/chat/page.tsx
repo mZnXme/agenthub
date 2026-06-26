@@ -24,7 +24,7 @@ export default function ChatIndex() {
         const [list, providers] = await Promise.all([sessionsService.list(), providersService.list()])
         if (cancelled) return
         setSessions(list)
-        setHasProvider(providers.length > 0)
+        setHasProvider(providers.some((provider) => provider.connectedViaOpenCode || provider.apiKeyMasked))
         if (list.length > 0) {
           router.replace(`/chat/${list[0].id}`)
           return

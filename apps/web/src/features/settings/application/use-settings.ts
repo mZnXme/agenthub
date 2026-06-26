@@ -15,9 +15,10 @@ export function useSettings() {
       .catch((e) => setError(e instanceof Error ? e.message : String(e)))
   }, [])
 
-  async function save() {
+  async function save(nextPreference = preference) {
     setError(null)
-    await settingsService.savePreference(preference)
+    await settingsService.savePreference(nextPreference)
+    setPreference(nextPreference)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }

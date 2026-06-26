@@ -24,7 +24,7 @@ export function useChatSession(sessionId: string) {
 
   useEffect(() => {
     sessionsService.list().then(setSessions)
-    providersService.list().then((items) => setHasProvider(items.length > 0)).catch(() => setHasProvider(false))
+    providersService.list().then((items) => setHasProvider(items.some((provider) => provider.connectedViaOpenCode || provider.apiKeyMasked))).catch(() => setHasProvider(false))
     usageService.get().then(setUsage).catch(() => null)
   }, [])
 

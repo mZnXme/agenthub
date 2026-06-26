@@ -67,13 +67,14 @@ export class SessionsUseCases {
   }
 
   async sendMessage(id: string, userId: string, content: string) {
-    const providers = await this.providers.findByUser(userId)
-    if (!providers.length) throw new BadRequestException('Add an AI provider before sending messages.')
+    const hasProviderCredential = await this.providers.hasCredential(userId)
+    if (!hasProviderCredential) throw new BadRequestException('Add an AI provider before sending messages.')
 
     await this.usage.checkLimit(userId, 'message')
     const session = await this.sessions.findByIdForUser(id, userId)
     const baseUrl = await this.getProcessUrl(userId)
     const selectedModel = await this.models.getEffectiveModelName(userId, session.modelConfigId)
+    const providers = await this.providers.findByUser(userId)
     const legacyProviderModel = providers.find((provider) => provider.modelId)?.modelId ?? undefined
     const model = selectedModel ?? legacyProviderModel
     const result = await this.openCode.sendMessage(session.openCodeSessionId, content, model, baseUrl)
