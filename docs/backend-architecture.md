@@ -26,8 +26,10 @@ Use cases must NOT directly depend on: Prisma, S3 SDK, bcrypt, JWT, HTTP clients
 
 ## Source Structure
 
+The current backend follows this DITC-style structure for active modules. Module-scoped use cases live under `modules/<module>/application/use-cases`, inbound controllers/DTOs live under `modules/<module>/adapters/inbound`, shared ports live under `application/ports`, and implementations live under `adapters/outbound`.
+
 ```
-apps/api/src/
+apps/backend/src/
   main.ts
   app.module.ts
 

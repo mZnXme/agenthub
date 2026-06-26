@@ -1,12 +1,9 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useAuthGuard } from '@/features/auth/application/use-auth-guard'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter()
-  useEffect(() => {
-    if (!localStorage.getItem('token')) router.push('/login')
-  }, [])
+  const { ready } = useAuthGuard()
+  if (!ready) return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', color: '#888', background: '#0a0a0a' }}>Loading…</div>
   return <>{children}</>
 }

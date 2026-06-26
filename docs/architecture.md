@@ -5,11 +5,12 @@
 ```
 hack&ict2/
   apps/
-    api/           NestJS backend (hexagonal architecture)
-    web/           Next.js 15 frontend (clean architecture)
+    backend/       NestJS backend (module-scoped hexagonal architecture)
+    web/           Next.js 15 frontend (feature hooks/services architecture)
   packages/
-    shared/        Shared TypeScript types and constants
+    types/         Current shared TypeScript interfaces (Phase 13 may rename to shared)
     db/            Prisma schema, migrations, generated client
+    storage/       S3-compatible object storage helpers
     tsconfig/      Shared TypeScript config files (not an importable package)
   docs/            Project documentation (committed to git)
   docs-local/      Local docs with Thai translations (gitignored)
@@ -25,19 +26,43 @@ hack&ict2/
 
 ## Packages
 
-### `packages/shared`
+### `packages/types`
 
-Importable as `@agenthub/shared`. Contains code shared between `apps/api` and `apps/web`.
+Importable as `@agenthub/types`. Contains code shared between `apps/backend` and `apps/web`. Phase 13 may rename this package to `@agenthub/shared` when the OpenAPI typed client/shared contract is introduced.
 
 ```
-packages/shared/
+packages/types/
   src/
     types/
       index.ts     All shared TypeScript interfaces and types
-    constants/
-      plans.ts     Plan names and limit constants
   package.json
   tsconfig.json
+```
+
+## Backend Source Layout
+
+```text
+apps/backend/src/
+  application/ports/        Global database, storage, and OpenCode ports
+  adapters/outbound/        Prisma, MinIO/S3, and OpenCode adapters
+  common/guards/            Cross-cutting Nest guards
+  modules/<feature>/        Feature modules
+    application/use-cases/  Module-scoped use cases
+    adapters/inbound/       Controllers and DTOs
+```
+
+Controllers depend on module services/facades, module facades delegate to use cases, and use cases depend on ports instead of Prisma/S3/OpenCode implementation classes.
+
+## Frontend Source Layout
+
+```text
+apps/web/src/
+  app/                      Next.js route adapters
+  features/<feature>/
+    application/            Client-side use cases/hooks
+    infrastructure/         API adapters using the shared API client
+    domain/                 Feature domain types/policies when needed
+  lib/                      Firebase and HTTP client infrastructure
 ```
 
 ### `packages/db`
@@ -88,9 +113,9 @@ packages/tsconfig/
 
 ```
 build
-  web  depends on  api build? No — FE calls API at runtime
-  api  depends on  db build (generates PrismaClient)
-  shared — no dependencies
+  web      calls backend at runtime
+  backend  depends on db build (generates PrismaClient)
+  types    no dependencies
 
 dev
   all run in parallel (persistent)
@@ -100,14 +125,14 @@ dev
 
 | App | File |
 |---|---|
-| api | apps/api/.env (copy from .env.example) |
+| backend | apps/backend/.env (copy from .env.example) |
 | web | apps/web/.env.local (copy from .env.example) |
 
 ## Dependency Rules
 
 ```
-apps/web      → @agenthub/shared, @agenthub/db (types only, no server code)
-apps/api      → @agenthub/shared, @agenthub/db
+apps/web      → @agenthub/types
+apps/backend  → @agenthub/types, @agenthub/db, @agenthub/storage
 packages/db   → no internal deps
-packages/shared → no internal deps
+packages/types → no internal deps
 ```

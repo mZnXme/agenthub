@@ -12,9 +12,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       ...(init?.headers ?? {}),
     },
   })
-  if (res.status === 401) { window.location.href = '/login'; throw new Error('Unauthorized') }
+  if (res.status === 401) {
+    if (typeof window !== 'undefined') window.location.href = '/login'
+    throw new Error('Unauthorized')
+  }
   if (!res.ok) throw new Error(await res.text())
-  return res.json() as Promise<T>
+  if (res.status === 204) return undefined as T
+  const text = await res.text()
+  if (!text) return undefined as T
+  return JSON.parse(text) as T
 }
 
 export const apiClient = {

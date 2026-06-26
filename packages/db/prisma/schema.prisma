@@ -1,0 +1,201 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String                @id @default(uuid())
+  email            String                @unique
+  name             String
+  firebaseUid      String                @unique
+  picture          String?
+  passwordHash     String?
+  createdAt        DateTime              @default(now())
+  sessions         Session[]
+  mcpServers       McpServer[]
+  providers        ProviderConfig[]
+  refreshTokens    RefreshToken[]
+  userSkills       UserSkill[]
+  usageRecords     UsageRecord[]
+  userPlan         UserPlan?
+  modelPreference  UserModelPreference?
+  files            FileAsset[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id          String    @id @default(uuid())
+  userId      String
+  tokenHash   String
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Session {
+  id                String       @id @default(uuid())
+  userId            String
+  openCodeSessionId String
+  title             String?
+  modelConfigId     String?
+  tokenCount        Int          @default(0)
+  compactSummary    String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  modelConfig       ModelConfig? @relation(fields: [modelConfigId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model McpServer {
+  id        String   @id @default(uuid())
+  userId    String
+  catalogSlug String?
+  name      String
+  transport String   @default("stdio")
+  command   String?
+  args      Json?
+  url       String?
+  env       Json?
+  headers   Json?
+  secretEnvEncrypted Json?
+  enabled   Boolean  @default(true)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("mcp_servers")
+}
+
+model ProviderConfig {
+  id              String   @id @default(uuid())
+  userId          String
+  providerId      String
+  apiKeyEncrypted String
+  baseUrl         String?
+  modelId         String?
+  label           String?
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, providerId])
+  @@index([userId])
+  @@map("provider_configs")
+}
+
+model Skill {
+  id          String      @id @default(uuid())
+  slug        String      @unique
+  name        String
+  description String?
+  config      Json?
+  userSkills  UserSkill[]
+
+  @@map("skills")
+}
+
+model UserSkill {
+  id      String  @id @default(uuid())
+  userId  String
+  skillId String
+  enabled Boolean @default(false)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill   Skill   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillId])
+  @@map("user_skills")
+}
+
+model Plan {
+  id                    String     @id @default(uuid())
+  slug                  String     @unique
+  name                  String
+  maxMessagesPerDay     Int        @default(30)
+  maxSessionsPerDay     Int        @default(3)
+  maxActiveSessions     Int        @default(5)
+  maxMcpServers         Int        @default(2)
+  maxSkills             Int        @default(3)
+  maxFileUploadsPerDay  Int        @default(5)
+  maxFileSizeMb         Int        @default(5)
+  storageLimitMb        Int        @default(50)
+  userPlans             UserPlan[]
+
+  @@map("plans")
+}
+
+model UserPlan {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  planId     String
+  validUntil DateTime?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan       Plan     @relation(fields: [planId], references: [slug], onDelete: Restrict)
+
+  @@map("user_plans")
+}
+
+model UsageRecord {
+  id              String @id @default(uuid())
+  userId          String
+  date            String
+  messageCount    Int    @default(0)
+  sessionCount    Int    @default(0)
+  fileUploadCount Int    @default(0)
+  storageUsedMb   Int    @default(0)
+  user            User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("usage_records")
+}
+
+model ModelConfig {
+  id          String                 @id @default(uuid())
+  name        String                 @unique
+  contextLimit Int
+  compactAt   Float                 @default(0.8)
+  createdAt   DateTime              @default(now())
+  sessions    Session[]
+  preferences UserModelPreference[]
+
+  @@map("model_configs")
+}
+
+model UserModelPreference {
+  id            String       @id @default(uuid())
+  userId        String       @unique
+  modelConfigId String?
+  compactAt     Float?
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  modelConfig   ModelConfig? @relation(fields: [modelConfigId], references: [id], onDelete: SetNull)
+
+  @@map("user_model_preferences")
+}
+
+model FileAsset {
+  id        String   @id @default(uuid())
+  ownerId   String
+  bucket    String
+  objectKey String
+  filename  String
+  mimeType  String
+  size      Int
+  visibility String  @default("private")
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@map("file_assets")
+}

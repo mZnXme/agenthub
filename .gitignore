@@ -6,5 +6,7 @@ dist
 .next
 .turbo
 *.log
+*.tsbuildinfo
+packages/db/src/generated/
 
 docs-local/

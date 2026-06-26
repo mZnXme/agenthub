@@ -15,7 +15,15 @@ Phase 13 จะ bridge gap นี้ (rename packages, Prisma migration = post-h
 
 ## สถานะปัจจุบัน ✅ Done
 
-### Backend (apps/api/src/)
+### 2026-06 update
+- [x] Phase 5 full backend clean architecture foundation: module-scoped `application` use cases, repository ports, and Prisma adapters are active for MCP/providers; file storage is isolated behind `packages/storage`.
+- [x] Phase 6 Firebase auth retained: backend validates Firebase ID tokens with Firebase Admin and FE refreshes Firebase tokens through the shared API client/auth guard.
+- [x] Phase 10 MinIO uploads: backend exposes presigned upload/confirm/download/delete endpoints with file size, daily upload, and storage quota checks.
+- [x] Phase 11 OpenCode hardening: MCP catalog install flow, command allowlist, HTTPS-only remote MCP validation, encrypted secret env/header injection, and runtime-only OpenCode injection are implemented.
+- [x] Phase 12 frontend clean architecture: pages use feature hooks/services for auth, chat, MCP, providers, skills, settings, and files.
+- [ ] Phase 13 remains intentionally deferred.
+
+### Backend (apps/backend/src/)
 - [x] `auth/` — register, login, JWT guard
 - [x] `users/` — user entity
 - [x] `sessions/` — CRUD + sendMessage + listMessages + streamEvents
