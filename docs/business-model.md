@@ -2,104 +2,107 @@
 
 ## Context
 
-AgentHub is a hosted web application. Users bring their own AI provider API keys (BYOK). The platform cost is server infrastructure, not AI API usage.
+AgentHub is a hosted OpenCode web application. Users bring their own AI provider access through OpenCode auth or encrypted manual API keys.
 
-## Infrastructure Cost Estimate
+The platform pays for infrastructure. Users pay their own AI provider costs.
 
-| Item | Provider | Monthly cost |
-|---|---|---|
-| VPS (2 vCPU, 4 GB RAM) | Hetzner CX22 | ~$5 |
-| Object storage (MinIO self-hosted) | Same VPS | $0 extra |
-| Domain + SSL | Namecheap + Let's Encrypt | ~$1 |
-| **Total** | | **~$6/month** |
+## Cost Model
 
-Notes:
-- OpenCode runs on the same VPS — no additional cost
-- MinIO runs on the same VPS — no additional cost
-- AI API costs are paid by the user (BYOK model) — zero cost to us
-- Break-even: **2 Pro subscribers**
+| Cost area           | Current approach                                    |
+| ------------------- | --------------------------------------------------- |
+| Web and API hosting | VPS with Docker Compose                             |
+| Database            | PostgreSQL container on the same host               |
+| Object storage      | MinIO container on the same host                    |
+| AI runtime          | OpenCode processes on the same host                 |
+| AI token/API usage  | Paid by the user through their provider credentials |
+| TLS/domain          | External DNS/TLS/reverse proxy setup                |
+
+The key business advantage is that heavy AI usage does not directly increase AgentHub's provider bill. The primary platform cost is fair use of CPU, memory, disk, and network on the host.
 
 ## Usage Limits Rationale
 
-Because users pay their own AI API costs, our limits are about **server resource fairness**, not AI cost recovery.
+Limits are about shared infrastructure fairness, not AI cost recovery.
 
-Limits apply to:
-- Number of sessions created per day (server session overhead)
-- Number of messages sent per day (OpenCode process load)
-- Number of MCP servers per account (memory per running MCP process)
+Limits protect:
+
+- OpenCode process count and memory use
+- active session count
+- MCP server process/config load
+- daily request volume
+- object storage growth
+- large file uploads
 
 ## Plans
 
 ### Free
 
-| Limit | Value |
-|---|---|
-| Messages per day | 30 |
-| Sessions per day | 3 |
-| Active sessions | 5 |
-| MCP servers | 2 |
-| Skills enabled | 3 |
-| File uploads | 5 per day, max 5 MB each |
-| Storage quota | 50 MB |
+| Limit            | Value     |
+| ---------------- | --------- |
+| Messages per day | 30        |
+| Sessions per day | 3         |
+| Active sessions  | 5         |
+| MCP servers      | 2         |
+| Skills enabled   | 3         |
+| File uploads     | 5 per day |
+| Max file size    | 5 MB      |
+| Storage quota    | 50 MB     |
 
-### Pro — $5/month
+### Pro
 
-| Limit | Value |
-|---|---|
-| Messages per day | Unlimited |
-| Sessions per day | Unlimited |
-| Active sessions | Unlimited |
-| MCP servers | 20 |
-| Skills enabled | Unlimited |
-| File uploads | 50 per day, max 50 MB each |
-| Storage quota | 5 GB |
+| Limit            | Value      |
+| ---------------- | ---------- |
+| Messages per day | Unlimited  |
+| Sessions per day | Unlimited  |
+| Active sessions  | Unlimited  |
+| MCP servers      | 20         |
+| Skills enabled   | Unlimited  |
+| File uploads     | 50 per day |
+| Max file size    | 50 MB      |
+| Storage quota    | 5 GB       |
 
-### Team — $12/seat/month (future)
+### Team - Future
 
-Everything in Pro plus:
-- Shared MCP server library (team-wide)
-- Shared skill configurations
-- Team admin panel
-- Priority support
+Potential additions:
 
-## Revenue Projection
+- shared MCP server library
+- shared skill configurations
+- organization-level provider policy
+- team admin panel
+- audit log
+- priority support
 
-| Subscribers | Monthly revenue | Profit (after ~$6 infra) |
-|---|---|---|
-| 10 Pro | $50 | $44 |
-| 50 Pro | $250 | $244 |
-| 100 Pro | $500 | $494 |
+## Revenue Logic
 
-## Implementation Plan for Usage Limiting
+Because users pay their own AI usage, low-cost pricing can still work if infrastructure remains efficient.
 
-### DB models needed
+Example monthly economics:
 
-```
-Plan          { id, name, tier, maxMessagesPerDay, maxSessionsPerDay,
-                maxActiveSessions, maxMcpServers, maxSkills,
-                maxFileUploadsPerDay, maxFileSizeMb, storageLimitMb }
+| Pro users | Revenue at $5/user | Notes                                                     |
+| --------- | ------------------ | --------------------------------------------------------- |
+| 10        | $50                | Covers small VPS costs with margin                        |
+| 50        | $250               | Enough for a larger VPS or separate database/storage host |
+| 100       | $500               | Enough for better observability and backups               |
 
-UserPlan      { userId, planId, validUntil, createdAt }
+Actual margins depend on server size, storage growth, backup policy, bandwidth, and support time.
 
-UsageRecord   { userId, date, messageCount, sessionCount,
-                fileUploadCount, storageUsedMb }
-```
+## Upgrade Flow
 
-### Enforcement
+Current MVP:
 
-1. On session creation → `UsageGuard` checks `sessionCount < plan.maxSessionsPerDay`
-2. On message send → `UsageGuard` checks `messageCount < plan.maxMessagesPerDay`
-3. On file upload → `UsageGuard` checks upload count and file size
-4. After successful action → `RecordUsageUseCase` increments today's `UsageRecord`
+- plans are stored in the database
+- usage is tracked per user per day
+- admin-only `POST /api/plans/assign` can assign plans
 
-### Upgrade flow (MVP)
+Future self-serve flow:
 
-For hackathon: manual plan assignment by admin via direct DB update.
-
-Post-hackathon: integrate Stripe Checkout for self-serve upgrade.
+- Stripe Checkout
+- webhook updates `UserPlan`
+- billing portal for cancellation and card updates
+- plan state reflected in `/api/usage`
 
 ## Pricing Philosophy
 
-- Free tier is genuinely useful (not a trial)
-- Pro tier is priced low ($5) to reduce friction — most active users can afford it
-- BYOK keeps our marginal cost near zero even for heavy Pro users
+- Free tier should be useful enough for real evaluation.
+- Pro should be inexpensive because users still pay their own AI provider bills.
+- BYOK and OpenCode auth keep marginal AI costs near zero for AgentHub.
+- Limits should be transparent in the UI and map to actual server constraints.

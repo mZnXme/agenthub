@@ -2,137 +2,133 @@
 
 ## Overview
 
-```
+```text
 hack&ict2/
   apps/
-    backend/       NestJS backend (module-scoped hexagonal architecture)
-    web/           Next.js 15 frontend (feature hooks/services architecture)
+    backend/       NestJS backend with module-scoped hexagonal architecture
+    web/           Next.js 15 frontend with feature clean architecture
   packages/
-    types/         Current shared TypeScript interfaces (Phase 13 may rename to shared)
+    types/         Shared TypeScript interfaces, imported as @agenthub/types
     db/            Prisma schema, migrations, generated client
     storage/       S3-compatible object storage helpers
-    tsconfig/      Shared TypeScript config files (not an importable package)
-  docs/            Project documentation (committed to git)
-  docs-local/      Local docs with Thai translations (gitignored)
+    tsconfig/      Shared TypeScript config files
+  docs/            Project documentation committed to git
+  docs-local/      Local-only notes, gitignored, may contain sensitive setup details
   .github/
     workflows/
       ci.yml
+      deploy.yml
+  docker-compose.dev.yml
+  docker-compose.prod.yml
   turbo.json
   pnpm-workspace.yaml
   package.json
-  .gitignore
-  .prettierrc
 ```
 
-## Packages
+## Package Responsibilities
 
-### `packages/types`
+| Package             | Responsibility                                                                                  |
+| ------------------- | ----------------------------------------------------------------------------------------------- |
+| `apps/web`          | Browser UI, Firebase login, route-level UX, feature hooks, API adapters                         |
+| `apps/backend`      | Authenticated API, usage enforcement, OpenCode orchestration, MCP/provider/file/session modules |
+| `packages/types`    | Shared TypeScript interfaces used by frontend and backend                                       |
+| `packages/db`       | Prisma schema, migrations, generated client, seed scripts                                       |
+| `packages/storage`  | S3-compatible helpers used by the backend file module                                           |
+| `packages/tsconfig` | Shared TS configs only                                                                          |
 
-Importable as `@agenthub/types`. Contains code shared between `apps/backend` and `apps/web`. Phase 13 may rename this package to `@agenthub/shared` when the OpenAPI typed client/shared contract is introduced.
+## Dependency Rules
 
+```text
+apps/web      -> @agenthub/types
+apps/backend  -> @agenthub/types, @agenthub/db, @agenthub/storage
+packages/db   -> no internal runtime deps
+packages/types -> no internal runtime deps
 ```
-packages/types/
-  src/
-    types/
-      index.ts     All shared TypeScript interfaces and types
-  package.json
-  tsconfig.json
-```
+
+Frontend code must not import backend implementation details. Backend feature use cases must depend on ports or module services rather than direct Prisma/OpenCode/S3 implementation classes.
 
 ## Backend Source Layout
 
 ```text
 apps/backend/src/
-  application/ports/        Global database, storage, and OpenCode ports
-  adapters/outbound/        Prisma, MinIO/S3, and OpenCode adapters
-  common/guards/            Cross-cutting Nest guards
-  modules/<feature>/        Feature modules
+  application/ports/        Database, storage, and OpenCode ports
+  adapters/outbound/        Prisma, MinIO/S3, and OpenCode implementations
+  common/                   Guards, decorators, security helpers
+  modules/<feature>/        Auth, users, sessions, providers, models, MCP, skills, files, usage
     application/use-cases/  Module-scoped use cases
     adapters/inbound/       Controllers and DTOs
 ```
 
-Controllers depend on module services/facades, module facades delegate to use cases, and use cases depend on ports instead of Prisma/S3/OpenCode implementation classes.
+The backend is a pragmatic modular monolith. Controllers call module services/facades, those delegate to use cases, and use cases are kept away from direct infrastructure dependencies where the module has been moved into the current architecture.
 
 ## Frontend Source Layout
 
 ```text
 apps/web/src/
   app/                      Next.js route adapters
+  components/               Shared UI and shell components
   features/<feature>/
-    application/            Client-side use cases/hooks
-    infrastructure/         API adapters using the shared API client
-    domain/                 Feature domain types/policies when needed
+    application/            Client-side hooks and use cases
+    infrastructure/         API adapters
+    domain/                 Domain types and policies when needed
   lib/                      Firebase and HTTP client infrastructure
 ```
 
-### `packages/db`
+Pages are route adapters. They compose `AppSidebar`, shared CSS classes, and feature application hooks rather than embedding API orchestration directly.
 
-Importable as `@agenthub/db`. Owns the Prisma schema, migrations, and re-exports the generated PrismaClient.
+## Database Models
 
-```
-packages/db/
-  prisma/
-    schema.prisma
-    migrations/
-  src/
-    index.ts       Re-export PrismaClient and all generated types
-  package.json
-  tsconfig.json
-```
+| Model                 | Purpose                                                                    |
+| --------------------- | -------------------------------------------------------------------------- |
+| `User`                | Account profile and Firebase UID mapping                                   |
+| `Session`             | Internal session row linked to an OpenCode session ID                      |
+| `McpServer`           | Per-user MCP configs, catalog slug, encrypted runtime secrets              |
+| `ProviderConfig`      | Encrypted manual provider credentials and optional base URL/model fallback |
+| `Skill`               | Seeded skill catalog                                                       |
+| `UserSkill`           | Per-user skill enablement                                                  |
+| `Plan`                | Free/pro/team limit definitions                                            |
+| `UserPlan`            | User plan assignment                                                       |
+| `UsageRecord`         | Daily usage counters                                                       |
+| `ModelConfig`         | Admin-managed model config and compact thresholds                          |
+| `UserModelPreference` | Selected model, enabled model list, compact override                       |
+| `FileAsset`           | Uploaded file metadata and object storage keys                             |
 
-#### Prisma Models
+## Runtime Flow
 
-| Model | Purpose |
-|---|---|
-| User | Account credentials and profile |
-| Session | OpenCode session ref per user (+ tokenCount, compactSummary) |
-| Message | Chat messages mirrored from OpenCode per session |
-| McpServer | Per-user MCP server configurations |
-| ProviderConfig | Per-user AI provider API keys (encrypted) |
-| File | File metadata for uploads and AI-generated files |
-| Skill | Available skills in the library |
-| UserSkill | Skills enabled per user |
-| Plan | Plan definitions (free, pro, team) |
-| UsageRecord | Daily usage tracking per user |
-| UserPlan | Plan assignment per user with validity period |
-| ModelConfig | AI model context limits and default compact threshold |
-| UserModelPreference | Per-user compact threshold override per model |
-
-### `packages/tsconfig`
-
-Not imported as a package. Referenced by path in `tsconfig.json` files via `extends`.
-
-```
-packages/tsconfig/
-  base.json
-  nextjs.json
-  nestjs.json
+```text
+Browser
+  -> Firebase Auth
+  -> Bearer Firebase ID token
+  -> NestJS API
+  -> PostgreSQL and MinIO
+  -> per-user OpenCode process
 ```
 
-## Turborepo Task Graph
+OpenCode auth and runtime data are isolated by setting the user's OpenCode process `cwd`, `HOME`, `XDG_CONFIG_HOME`, and `XDG_DATA_HOME` to a per-user session directory.
 
+## CI And Deploy
+
+CI is defined in `.github/workflows/ci.yml`:
+
+```text
+pnpm install --no-frozen-lockfile
+pnpm type-check
+pnpm build
 ```
-build
-  web      calls backend at runtime
-  backend  depends on db build (generates PrismaClient)
-  types    no dependencies
 
-dev
-  all run in parallel (persistent)
+Production deploy is defined in `.github/workflows/deploy.yml`:
+
+```text
+fresh clone main into /tmp/agenthub-deploy
+copy server-owned /opt/agenthub/.env into the checkout
+start postgres and minio
+run prisma migrate deploy
+docker compose up --build -d
+prune old images
 ```
 
-## Environment Variables
+The server `.env` is the production secret source. It must not be committed.
 
-| App | File |
-|---|---|
-| backend | apps/backend/.env (copy from .env.example) |
-| web | apps/web/.env.local (copy from .env.example) |
+## Phase 13
 
-## Dependency Rules
-
-```
-apps/web      → @agenthub/types
-apps/backend  → @agenthub/types, @agenthub/db, @agenthub/storage
-packages/db   → no internal deps
-packages/types → no internal deps
-```
+`packages/types` remains the active shared package. The future OpenAPI typed client and possible package rename to a broader shared contract package are intentionally deferred.

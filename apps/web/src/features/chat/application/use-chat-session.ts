@@ -85,12 +85,16 @@ export function useChatSession(sessionId: string) {
       setLimitMsg('Add an AI provider before sending messages.')
       return
     }
+    if (modelName && !models.some((model) => model.id === modelName)) {
+      setLimitMsg('Selected model is not available. Open Settings and enable one of the current models.')
+      return
+    }
     const content = input
     setMessages((current) => [...current, { role: 'user', content }])
     setInput('')
     setLoading(true)
     try {
-      void messagesService.send(sessionId, content, { modelName: modelName || undefined, effort })
+      await messagesService.send(sessionId, content, { modelName: modelName || undefined, effort })
       setMessages((current) => [...current, { role: 'assistant', content: '' }])
       await streamEvents(sessionId, (text) =>
         setMessages((current) => {
@@ -101,6 +105,8 @@ export function useChatSession(sessionId: string) {
       )
       usageService.get().then(setUsage).catch(() => null)
     } catch (e) {
+      setMessages((current) => current.slice(0, -1))
+      setInput(content)
       setLimitMsg(e instanceof Error ? e.message : 'Message limit reached')
     } finally {
       setLoading(false)

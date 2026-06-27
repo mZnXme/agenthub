@@ -2,195 +2,178 @@
 
 ## Summary
 
-Next.js 15 App Router with clean architecture. Business logic lives in `features/`, pure UI in `components/`, and HTTP calls in `features/*/services/`. Pages are thin orchestrators.
+The frontend is a Next.js 15 App Router app using React 19, Firebase Auth, feature-level clean architecture, and a custom terminal-console visual system.
+
+Pages are thin route adapters. Feature behavior lives under `features/*/application`, API access lives under `features/*/infrastructure`, and shared runtime helpers live under `lib/`.
 
 ## Dependency Direction
 
+```text
+app routes
+  -> components
+  -> features/*/application hooks
+  -> features/*/infrastructure services
+  -> lib/api/client.ts
+  -> backend API
 ```
-app/page.tsx (thin)
-  → components/ (pure UI, no API calls)
-    ← features/*/hooks/ (state + business logic)
-      ← features/*/services/ (API calls)
-        ← lib/api/client.ts (base HTTP client)
-```
+
+Rules:
+
+- Route files should compose hooks and UI, not own API details.
+- Infrastructure services own endpoint paths and request shapes.
+- Application hooks own user-facing state transitions.
+- Shared UI should not import feature infrastructure directly.
+- Firebase token handling stays in `lib/firebase` and `lib/api/client.ts`.
 
 ## Source Structure
 
-```
+```text
 apps/web/src/
-  app/                              Next.js App Router
-    (auth)/
-      login/
-        page.tsx
-      register/
-        page.tsx
-    (app)/
-      layout.tsx                    AppShell + auth guard
-      chat/
-        page.tsx                    Redirect to last session or create new
-        [sessionId]/
-          page.tsx                  Chat view for a specific session
-      mcp/
-        page.tsx
-      providers/
-        page.tsx
-      skills/
-        page.tsx
-      settings/
-        page.tsx
-    layout.tsx                      Root layout (fonts, global providers)
-    page.tsx                        Redirect → /chat
+  app/
+    (auth)/login/page.tsx
+    (app)/layout.tsx
+    (app)/chat/page.tsx
+    (app)/chat/[sessionId]/page.tsx
+    (app)/providers/page.tsx
+    (app)/settings/page.tsx
+    (app)/mcp/page.tsx
+    (app)/skills/page.tsx
+    globals.css
+    layout.tsx
+    page.tsx
 
   components/
-    ui/                             Generic, stateless UI primitives
-      button/
-        button.tsx
-        button.types.ts
-      input/
-        input.tsx
-      textarea/
-        textarea.tsx
-      card/
-        card.tsx
-      badge/
-        badge.tsx
-      modal/
-        modal.tsx
-      spinner/
-        spinner.tsx
-      avatar/
-        avatar.tsx
-
-    layout/
-      sidebar/
-        sidebar.tsx
-        sidebar-nav.tsx
-        sidebar-session-list.tsx
-      header/
-        header.tsx
-      app-shell/
-        app-shell.tsx
-
-    chat/
-      message-bubble/
-        message-bubble.tsx          Renders user or assistant message
-      message-list/
-        message-list.tsx
-      chat-input/
-        chat-input.tsx              Textarea + send button + file attach
-      tool-call-card/
-        tool-call-card.tsx          Shows live AI tool calls (MCP activity)
-      typing-indicator/
-        typing-indicator.tsx
-      file-attachment/
-        file-attachment.tsx         Drag-drop or click to attach files
-
-    mcp/
-      mcp-server-card/
-        mcp-server-card.tsx
-      mcp-server-form/
-        mcp-server-form.tsx         Add / edit MCP server
-
-    providers/
-      provider-card/
-        provider-card.tsx
-      provider-form/
-        provider-form.tsx
-
-    skills/
-      skill-card/
-        skill-card.tsx
-      skill-list/
-        skill-list.tsx
-
-    files/
-      file-preview/
-        file-preview.tsx            Image preview or file chip
+    app-sidebar.tsx
 
   features/
-    auth/
-      hooks/
-        use-auth.ts                 Login state, token management
-      services/
-        auth.service.ts             login(), register(), logout(), getMe()
-      types/
-        auth.types.ts
-
-    chat/
-      hooks/
-        use-sessions.ts             List and create sessions
-        use-messages.ts             Send message, receive SSE stream
-      services/
-        sessions.service.ts
-        messages.service.ts
-        events.service.ts           SSE client for streaming responses
-      types/
-        chat.types.ts
-
-    mcp/
-      hooks/
-        use-mcp-servers.ts
-      services/
-        mcp.service.ts
-      types/
-        mcp.types.ts
-
-    providers/
-      hooks/
-        use-providers.ts
-      services/
-        providers.service.ts
-      types/
-        providers.types.ts
-
-    skills/
-      hooks/
-        use-skills.ts
-      services/
-        skills.service.ts
-      types/
-        skills.types.ts
-
-    files/
-      hooks/
-        use-file-upload.ts          Handle presigned upload flow
-      services/
-        files.service.ts
-      types/
-        file.types.ts
-
-    usage/
-      hooks/
-        use-usage.ts                Current plan limits and today usage
-      services/
-        usage.service.ts
+    auth/application/use-auth-guard.ts
+    chat/application/use-chat-session.ts
+    chat/infrastructure/sessions.service.ts
+    chat/infrastructure/messages.service.ts
+    chat/infrastructure/events.service.ts
+    files/application/use-file-upload.ts
+    files/infrastructure/files.service.ts
+    mcp/application/use-mcp-servers.ts
+    mcp/infrastructure/mcp.service.ts
+    providers/application/use-providers.ts
+    providers/infrastructure/providers.service.ts
+    settings/application/use-settings.ts
+    settings/infrastructure/settings.service.ts
+    skills/application/use-skills.ts
+    skills/infrastructure/skills.service.ts
+    usage/infrastructure/usage.service.ts
 
   lib/
-    api/
-      client.ts                     Base fetch wrapper — attaches JWT, handles 401 redirect
-    utils/
-      cn.ts                         classname merge (clsx + tailwind-merge)
-      format-date.ts
-    constants/
-      routes.ts                     Typed route constants
-
-  hooks/
-    use-local-storage.ts
-    use-debounce.ts
-    use-event-source.ts             Generic SSE hook used by features/chat
-
-  types/
-    index.ts                        Re-export from @agenthub/shared
+    api/client.ts
+    firebase.ts
 ```
 
-## Component Rules
+## Auth
 
-- `components/ui/` — no imports from `features/`, no API calls, no state beyond local UI state
-- `components/layout/` and feature-specific components — may receive data as props from page-level hooks
-- Pages are thin: they call hooks and pass data to components
+Firebase Auth is the source of browser identity.
 
-## Auth Guard
+`lib/api/client.ts` reads the current Firebase ID token and attaches it as:
 
-`(app)/layout.tsx` checks for a valid token on mount. If missing or expired, redirects to `/login`.
+```text
+Authorization: Bearer <firebase-id-token>
+```
 
-Token refresh is handled transparently in `lib/api/client.ts` by calling the refresh endpoint on 401.
+The backend verifies that token with Firebase Admin. A `401` response redirects the browser to `/login`.
+
+## App Shell
+
+`components/app-sidebar.tsx` provides the shared navigation for app routes:
+
+- Chat
+- Providers
+- Models
+- MCP
+- Skills
+
+The chat session route renders additional session controls inside the sidebar, including `New chat`, the session list, delete buttons, and usage counters.
+
+## Chat UX
+
+`/chat` is a landing and routing page:
+
+- loads existing sessions
+- checks whether the user has any provider credential
+- redirects to the latest existing session when one exists
+- does not auto-create sessions
+- asks the user to click `New chat` when no session exists
+- routes users to `/providers` when no provider is configured
+
+`/chat/[sessionId]` is the active chat page:
+
+- lists sessions in the sidebar
+- sends messages for the selected session
+- shows uploaded file chips
+- shows usage limits
+- exposes a model dropdown populated from enabled models
+- exposes an effort dropdown with `Auto`, `Minimal`, `Low`, `Medium`, `High`, and `Max`
+- blocks sending when no provider credential is available
+
+## Providers UX
+
+The providers page supports two connection paths:
+
+| Path             | Current behavior                                                                                          |
+| ---------------- | --------------------------------------------------------------------------------------------------------- |
+| OpenCode connect | OpenAI uses `opencode auth login -p openai -m "ChatGPT Pro/Plus (headless)"` and displays URL/code status |
+| Manual key       | Stores encrypted API key configuration through the backend                                                |
+
+After a provider is connected or saved, the user is guided to Settings to enable models.
+
+## Settings UX
+
+The settings page loads:
+
+- connected provider list
+- OpenCode model list through `GET /api/user/models`
+- current user preference through `GET /api/user/preference`
+
+Users choose which OpenCode model IDs are enabled for Chat. Chat only displays enabled models.
+
+## MCP UX
+
+The MCP page supports:
+
+- catalog browsing
+- catalog install with secret values
+- custom server creation
+- update/delete
+- enable/disable state through saved config
+
+The backend is responsible for stdio command allowlisting, HTTPS URL validation, and encrypted secret injection.
+
+## Skills UX
+
+The skills page lists seeded skills and toggles user enablement. Enabled skills are injected into OpenCode runtime config when a user process is started.
+
+## Files UX
+
+File attachment uses a direct-to-MinIO presigned upload flow:
+
+```text
+request upload URL
+PUT file bytes to MinIO
+confirm upload with backend
+show file chip in chat
+```
+
+The backend enforces file count, file size, and storage quota before issuing upload URLs.
+
+## Visual System
+
+The UI is intentionally not a generic card dashboard. It uses native CSS in `globals.css`:
+
+- OKLCH color tokens
+- dark grid background
+- terminal-console panels
+- responsive sidebar
+- command-like buttons
+- model/effort selectors
+- chat bubbles
+- pill and metric components
+
+The project does not currently install Tailwind, shadcn/ui, or Magic UI runtime dependencies. The current design borrows the terminal/grid direction but implements it with local CSS to keep the dependency surface small.

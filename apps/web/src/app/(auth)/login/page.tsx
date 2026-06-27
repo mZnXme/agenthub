@@ -30,7 +30,11 @@ export default function LoginPage() {
       <section className="panel pad auth-card stack">
         <p className="eyebrow">agent workspace</p>
         <h1 className="page-title" style={{ fontSize: 44 }}>AgentHub</h1>
-        <p className="page-copy">A browser console for OpenCode sessions, provider auth, model routing, MCP tools, and skills.</p>
+        <p className="page-copy">Sign in to open the hosted OpenCode control plane, connect a provider, and start a managed session.</p>
+        <div className="stack" style={{ gap: 8 }}>
+          <div className="cluster"><span className="pill on">Hosted</span><span className="pill on">BYO provider</span><span className="pill on">MCP ready</span></div>
+          <p className="panel-copy">One browser surface for the parts that normally live across a desktop app, config files, and separate tools.</p>
+        </div>
         {error && <p className="error">{error}</p>}
         <button className="btn primary" onClick={handleGoogle} disabled={loading}>{loading ? 'Signing in...' : 'Continue with Google'}</button>
       </section>

@@ -1,66 +1,81 @@
-# AgentHub — Project Overview
+# AgentHub Project Overview
 
 ## Goal
 
-A multi-tenant web application that allows anyone to use AI agents with MCP tools, Skills, and custom integrations — directly in the browser, without installing any desktop application.
+AgentHub is a multi-tenant web application for using OpenCode-powered AI agents, MCP tools, skills, provider authentication, model selection, and files directly from a browser.
 
-Inspired by Claude Desktop and OpenCode Desktop but accessible as a web app with per-user accounts, session history, and usage plans.
+The product is inspired by local OpenCode and desktop MCP workflows, but it removes local installation and manual config editing from the user experience.
 
 ## Problem Statement
 
-| Current state | Pain |
-|---|---|
-| Claude Desktop / OpenCode Desktop | Requires local installation and manual config |
-| ChatGPT / Claude.ai (web) | No MCP support, no custom tools |
-| Codex (OpenAI) | Requires separate app, limited tool ecosystem |
+| Existing option                    | Pain                                                                |
+| ---------------------------------- | ------------------------------------------------------------------- |
+| OpenCode Desktop or local OpenCode | Requires local installation, local auth state, and local MCP config |
+| Claude Desktop                     | MCP is powerful but desktop-bound and manually configured           |
+| ChatGPT or Claude web apps         | Limited custom MCP runtime control                                  |
+| Raw OpenCode server                | Developer tool, not a user-account product                          |
 
-**AgentHub solves this** by running OpenCode as a backend server and exposing it through a web UI with per-user auth, MCP management, and usage control.
+AgentHub solves this by hosting OpenCode behind Firebase-authenticated accounts, per-user process isolation, managed provider setup, managed MCP setup, and usage limits.
 
-## Core Features
+## Current Product Surface
 
-- **Per-user accounts** — register, login, isolated sessions and configs
-- **AI Chat** — streaming chat powered by OpenCode engine
-- **MCP servers** — add/remove/enable any MCP server per account (stdio or HTTP)
-- **Skills** — pre-built agent skill library, enable per session
-- **Custom AI provider** — bring your own API key (Anthropic, OpenAI, Google, or custom endpoint)
-- **File handling** — attach files/images to messages; AI-generated files available for download
-- **Usage limits** — free tier with daily limits, Pro tier for unlimited use
+| Area      | Current behavior                                                                                                     |
+| --------- | -------------------------------------------------------------------------------------------------------------------- |
+| Auth      | Firebase Google sign-in on web, Firebase Admin verification on backend                                               |
+| Chat      | Explicit session creation, per-session URL, message send, streamed events, model selector, effort selector           |
+| Providers | OpenAI OpenCode headless device-code connect plus encrypted manual API key fallback                                  |
+| Models    | Settings page lists OpenCode models for connected providers and lets users enable chat-visible models                |
+| MCP       | Curated catalog install flow plus custom stdio/http servers                                                          |
+| Skills    | Pre-seeded skills can be toggled per account                                                                         |
+| Files     | Presigned MinIO upload, confirm, download, and delete flow                                                           |
+| Usage     | Plan-based checks for messages, sessions, active sessions, MCP servers, skills, file uploads, file size, and storage |
+| UI        | Dark terminal-console interface inspired by OpenCode and VoltAgent                                                   |
 
-## Tech Stack
+## Current Stack
 
-| Layer | Technology |
-|---|---|
-| Frontend | Next.js 15 (App Router) |
-| Backend | NestJS 10 + Fastify |
-| AI Engine | OpenCode (open source, self-hosted) |
-| Database | SQLite → PostgreSQL (future) via Prisma |
-| Object Storage | MinIO (self-hosted, S3-compatible) |
-| Auth | JWT (access + refresh tokens) |
-| Monorepo | Turborepo + pnpm workspaces |
+| Layer          | Technology                                |
+| -------------- | ----------------------------------------- |
+| Frontend       | Next.js 15 App Router, React 19           |
+| Backend        | NestJS 10 + Fastify                       |
+| AI Engine      | OpenCode CLI/server, self-hosted per user |
+| Database       | PostgreSQL via Prisma 6                   |
+| Object Storage | MinIO, S3-compatible                      |
+| Auth           | Firebase Auth and Firebase Admin          |
+| Monorepo       | Turborepo + pnpm workspaces               |
+| Deployment     | GitHub Actions + Docker Compose           |
 
 ## Monorepo Structure
 
-```
+```text
 apps/
-  web/     Next.js frontend
-  api/     NestJS backend
+  web/       Next.js frontend
+  backend/   NestJS backend
 packages/
-  shared/  Shared TypeScript types and constants
-  db/      Prisma schema, migrations, and generated client
-  tsconfig/ Shared TypeScript configuration files
+  types/     Shared TypeScript interfaces
+  db/        Prisma schema, migrations, generated client
+  storage/   S3-compatible storage helpers
+  tsconfig/  Shared TypeScript configs
+docs/        Project documentation
 ```
 
-## Decisions Made
+## Product Decisions
 
-| Decision | Choice |
-|---|---|
-| Message persistence | Mirror all messages in our DB |
-| SSE streaming | Proxy to FE in real-time + persist full message on `[DONE]` |
-| Skills storage | DB only — admin seeds, users enable/disable per account |
-| Multi-instance OpenCode | 1 process per user (isolated, lazy-started) |
-| Process start | Lazy — spawn on first message of the session |
-| Process stop | Idle timeout 30 min + immediate on logout |
-| Process restart | Auto-restart on crash, max 3× in 5 min, then mark `failed` |
-| Context compaction | Trigger at 80% of model context limit via OpenCode compact API |
-| Model context limits | Stored in `ModelConfig` DB table (admin-managed, no redeploy) |
-| OpenCode session files | Persisted at `/opencode-sessions/user-{userId}/` for full continuity |
+| Decision         | Current choice                                                                   |
+| ---------------- | -------------------------------------------------------------------------------- |
+| Authentication   | Keep Firebase Auth; backend verifies Firebase ID tokens                          |
+| Provider setup   | OpenCode auth where available, encrypted manual key fallback where needed        |
+| OpenCode runtime | One lazy-started process per user                                                |
+| OpenCode data    | Per-user `HOME`, `XDG_CONFIG_HOME`, and `XDG_DATA_HOME` under the session root   |
+| Session creation | Explicit `New chat`; `/chat` does not auto-create a session                      |
+| Model source     | `opencode models <provider>` is the source of truth for connected providers      |
+| Model usage      | Users enable models in Settings and pick one in Chat                             |
+| Effort usage     | Chat sends effort separately from model selection                                |
+| MCP safety       | Stdio command allowlist, HTTPS remote URL validation, encrypted secret injection |
+| Storage          | Self-hosted MinIO with direct presigned uploads                                  |
+| Documentation    | Phase 13 typed OpenAPI/shared client remains deferred                            |
+
+## MVP Status
+
+The production-level MVP is implemented around Firebase Auth, PostgreSQL/Prisma, OpenCode provider/model routing, MCP catalog/custom configs, skills, MinIO uploads, plan usage limits, and a redesigned terminal-console frontend.
+
+The main deferred item is the Phase 13 OpenAPI typed client/shared contract alignment.

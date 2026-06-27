@@ -8,6 +8,8 @@ export async function streamEvents(
   const res = await fetch(`${BASE}/api/sessions/${sessionId}/stream`, {
     headers: { Authorization: `Bearer ${token}` },
   })
+  if (!res.ok) throw new Error(await res.text())
+  if (!res.body) throw new Error('Stream is unavailable')
   const reader = res.body!.getReader()
   const dec = new TextDecoder()
   let buf = ''

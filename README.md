@@ -1,27 +1,36 @@
 # AgentHub
 
-> AI agent platform that brings MCP, Skills, and tools from desktop apps to the web — for everyone.
+AgentHub is a hosted web console for OpenCode. It gives users browser login, per-user AI sessions, provider connection, OpenCode model routing, MCP server setup, skills, usage limits, and file uploads without requiring a local OpenCode or MCP setup.
 
-**The problem:** MCP-powered AI (Claude Desktop, OpenCode) requires local app installation and manual config. Regular users can't access it.
+## Product Goal
 
-**The solution:** AgentHub runs OpenCode as a backend server and wraps it with a web UI — login, chat, manage MCP tools, connect AI providers. No installation needed.
+AgentHub turns desktop-style agent workflows into a hosted web product:
 
----
+- connect AI providers
+- enable OpenCode models per account
+- choose model and reasoning effort in chat
+- install curated or custom MCP servers
+- enable agent skills
+- upload files through quota-aware storage
+- keep each user's OpenCode process and auth data isolated
 
-## Stack
+## Current Stack
 
-| Layer | Tech |
-|---|---|
-| Frontend | Next.js 15 (App Router) |
-| Backend | NestJS 10 + Fastify |
-| Database | PostgreSQL via Prisma |
-| Storage | Self-hosted MinIO / S3-compatible presigned URLs |
-| AI Engine | OpenCode (open source) |
-| Monorepo | Turborepo + pnpm workspaces |
+| Layer      | Tech                                                                         |
+| ---------- | ---------------------------------------------------------------------------- |
+| Frontend   | Next.js 15 App Router, React 19                                              |
+| UI         | Custom dark terminal-console design system in `apps/web/src/app/globals.css` |
+| Auth       | Firebase Auth on web, Firebase Admin token verification on backend           |
+| Backend    | NestJS 10 + Fastify                                                          |
+| Database   | PostgreSQL + Prisma 6                                                        |
+| Storage    | Self-hosted MinIO through S3-compatible presigned URLs                       |
+| AI Runtime | OpenCode, one lazy-started isolated process per user                         |
+| Monorepo   | Turborepo + pnpm workspaces                                                  |
+| Deployment | GitHub Actions fresh checkout + Docker Compose                               |
 
-## Architecture
+## Repository Layout
 
-```
+```text
 apps/
   web/       Next.js frontend
   backend/   NestJS backend
@@ -29,71 +38,80 @@ packages/
   db/        Prisma schema, migrations, and generated client
   storage/   S3-compatible storage helpers
   types/     Shared TypeScript interfaces
-  tsconfig/  Shared TS configs
+  tsconfig/  Shared TypeScript configs
+docs/        Project documentation
 ```
 
-## How it works
+## Runtime Flow
 
-```
-User (browser)
-    ↓ Firebase ID token
-NestJS API  ←→  PostgreSQL (users, sessions, MCP configs, provider keys, file metadata)
-    ↓ presigned URLs
-MinIO / S3-compatible object storage
-    ↓
-opencode serve  (AI engine with MCP + Skills)
-    ↓
-AI providers (Anthropic, OpenAI, Google, custom)
+```text
+Browser
+  -> Firebase ID token
+  -> NestJS API
+  -> PostgreSQL for users, sessions, provider config, MCP config, usage, files
+  -> MinIO for uploaded file objects
+  -> per-user OpenCode process
+  -> AI provider credentials from OpenCode auth or encrypted manual keys
 ```
 
-1. User logs in with Firebase Auth
-2. NestJS verifies Firebase ID tokens server-side
-3. User adds their AI provider API key (stored encrypted)
-4. User installs MCP servers from the catalog or adds allowlisted custom servers
-5. User uploads files through MinIO presigned URLs when needed
-6. User chats - NestJS creates an OpenCode session, injects provider keys/MCP secrets, proxies messages
+1. User signs in with Firebase.
+2. Web app sends the Firebase ID token as `Authorization: Bearer <token>`.
+3. Backend verifies the token with Firebase Admin and maps it to an internal user.
+4. User connects an AI provider on `/providers`.
+5. User enables available OpenCode models on `/settings`.
+6. User explicitly creates a chat session on `/chat`.
+7. User selects model and effort in the chat toolbar.
+8. Backend sends messages to the user's OpenCode process.
+9. Backend injects manual provider keys, enabled MCP servers, and enabled skills into OpenCode at runtime.
 
-## Getting started
+## Key Features
+
+- OpenCode provider connect flow: OpenAI ChatGPT Pro/Plus uses OpenCode headless device-code auth.
+- Manual provider fallback: Anthropic, OpenAI, Google, and custom-compatible providers can use encrypted API keys.
+- OpenCode model registry: `Settings` lists models from `opencode models <provider>` for connected providers.
+- Chat model and effort controls: model selection is separate from `Auto`, `Minimal`, `Low`, `Medium`, `High`, and `Max` effort.
+- Per-user OpenCode isolation: every user gets a dedicated OpenCode process and data directory under the configured session root.
+- MCP catalog and custom servers: curated installs, custom stdio/http configs, encrypted secret env/header injection, command allowlist, and HTTPS validation.
+- Skills: users can toggle pre-seeded agent skills per account.
+- File uploads: presigned upload, confirm, download, and delete flow backed by MinIO.
+- Usage limits: plan limits cover messages, sessions, active sessions, MCP servers, skills, uploads, file size, and storage.
+- Terminal-console UI: dark OpenCode/VoltAgent-style shell with shared CSS tokens, responsive sidebar, panels, pills, chat bubbles, and command-like controls.
+
+## Getting Started
 
 ```bash
-# 1. Install
 pnpm install
-
-# 2. Start OpenCode server
-opencode serve --port 4096
-
-# 3. Start local infrastructure for PostgreSQL/MinIO
 pnpm docker:dev
-
-# 4. Copy env files
-cp .env.example .env
-cp apps/backend/.env.example apps/backend/.env
-cp apps/web/.env.example apps/web/.env
-
-# 5. Generate Prisma client when working on the database package
 pnpm db:generate
-
-# 6. Dev
 pnpm dev
 ```
 
-- Web: http://localhost:3000
-- API: http://localhost:4000
-- API docs: http://localhost:4000/api/docs
+Local endpoints:
 
-## Key features
+| Service | URL                            |
+| ------- | ------------------------------ |
+| Web     | http://localhost:3000          |
+| API     | http://localhost:4000          |
+| Swagger | http://localhost:4000/api/docs |
 
-- **Login / per-user sessions** — each user's sessions are isolated
-- **MCP catalog + key setup** — install base tools like Context7 plus local tools such as Playwright/Figma and inject required secrets securely
-- **Bring your own API key** — connect Anthropic, OpenAI, Google, or any OpenAI-compatible endpoint
-- **File uploads** — presigned MinIO upload/download flow with plan quota checks
-- **Clean application layers** — backend use cases/ports/adapters and frontend hooks/services keep pages/controllers thin
-- **Live tool visibility** — see AI tool calls in real-time
-- **No installation** — runs in any browser
+Required local environment files depend on Firebase, PostgreSQL, MinIO, OpenCode, and encryption settings. Do not commit real secrets.
 
-## Admin access
+## Useful Commands
 
-Admin-only API mutations are controlled by the `ADMIN_EMAILS` environment variable on the API service. Set it to a comma-separated list of Firebase account emails before using plan assignment or model configuration mutations.
+```bash
+pnpm type-check
+pnpm build
+pnpm db:generate
+pnpm db:deploy
+```
+
+## Production Notes
+
+- CI runs `pnpm install --no-frozen-lockfile`, `pnpm type-check`, and `pnpm build`.
+- Production deploy is driven by `.github/workflows/deploy.yml`.
+- Deploy clones a fresh `main` checkout, copies the server-owned `.env`, starts PostgreSQL and MinIO, applies Prisma migrations, then rebuilds/recreates services with Docker Compose.
+- Production secrets live outside git.
+- `ADMIN_EMAILS` controls admin-only API mutations such as model config and plan assignment.
 
 ## License
 

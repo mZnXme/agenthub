@@ -86,6 +86,7 @@ model ProviderConfig {
   baseUrl         String?
   modelId         String?
   label           String?
+  openCodeConnected Boolean @default(false)
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, providerId])

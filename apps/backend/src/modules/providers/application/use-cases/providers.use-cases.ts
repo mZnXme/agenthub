@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { ChildProcess, spawn } from 'child_process'
 import { existsSync, mkdirSync } from 'fs'
@@ -28,8 +28,11 @@ const CONNECT_METHODS: Record<string, { method: string }> = {
   openai: { method: 'ChatGPT Pro/Plus (headless)' },
 }
 
+const OPENCODE_CONNECTED_SECRET = '__opencode_connected__'
+
 @Injectable()
 export class ProvidersUseCases {
+  private readonly logger = new Logger(ProvidersUseCases.name)
   private readonly connectStates = new Map<string, ConnectState>()
 
   constructor(
@@ -60,6 +63,19 @@ export class ProvidersUseCases {
     return false
   }
 
+  private async persistOpenCodeCredential(userId: string, providerId: string) {
+    const existing = await this.providers.findByProvider(userId, providerId)
+    const apiKeyEncrypted = existing?.apiKeyEncrypted ?? encryptSecret('', this.encryptionSecret())
+    return this.providers.upsert(userId, {
+      providerId,
+      apiKeyEncrypted,
+      baseUrl: existing?.baseUrl ?? undefined,
+      modelId: existing?.modelId ?? undefined,
+      label: existing?.label ?? 'OpenCode connected',
+      openCodeConnected: true,
+    })
+  }
+
   upsert(userId: string, data: UpsertProviderInput) {
     const { apiKey, ...rest } = data
     return this.providers.upsert(userId, {
@@ -80,7 +96,7 @@ export class ProvidersUseCases {
         providerId,
         apiKeyEncrypted: undefined,
         apiKeyMasked: p ? '••••••••' : undefined,
-        connectedViaOpenCode: this.hasOpenCodeCredential(userId, providerId),
+        connectedViaOpenCode: Boolean(p?.openCodeConnected || this.hasOpenCodeCredential(userId, providerId)),
       }
     })
   }
@@ -134,6 +150,7 @@ export class ProvidersUseCases {
         state.error = state.output.includes('Unknown method') ? 'OpenCode does not support this login method.' : 'Connection was not completed.'
       }
       state.process = undefined
+      if (code === 0) void this.persistOpenCodeCredential(userId, providerId).catch((error) => this.logger.error(`Failed to persist OpenCode credential for ${userId}/${providerId}: ${error instanceof Error ? error.message : String(error)}`))
     })
     proc.on('error', (error) => {
       state.status = 'failed'
@@ -163,8 +180,10 @@ export class ProvidersUseCases {
   connectStatus(userId: string, providerId: string) {
     const state = this.connectStates.get(this.stateKey(userId, providerId))
     if (state) return this.publicConnectState(state)
-    if (this.hasOpenCodeCredential(userId, providerId)) return { providerId, status: 'connected' }
-    return { providerId, status: 'idle' }
+    return this.providers.findByProvider(userId, providerId).then((provider) => {
+      if (provider?.openCodeConnected || this.hasOpenCodeCredential(userId, providerId)) return { providerId, status: 'connected' }
+      return { providerId, status: 'idle' }
+    })
   }
 
   private publicConnectState(state: ConnectState) {

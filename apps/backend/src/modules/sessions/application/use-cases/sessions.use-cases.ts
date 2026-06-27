@@ -73,7 +73,12 @@ export class SessionsUseCases {
     await this.usage.checkLimit(userId, 'message')
     const session = await this.sessions.findByIdForUser(id, userId)
     const baseUrl = await this.getProcessUrl(userId)
+    const availableModels = await this.models.listUserModels(userId)
+    const enabledModelIds = new Set(availableModels.filter((model) => model.enabled).map((model) => model.id))
     const selectedModel = options?.modelName ?? await this.models.getEffectiveModelName(userId, options?.modelConfigId ?? session.modelConfigId)
+    if (options?.modelName && !enabledModelIds.has(options.modelName)) {
+      throw new BadRequestException('Selected model is not enabled. Open Settings and choose an available model.')
+    }
     const providers = await this.providers.findByUser(userId)
     const legacyProviderModel = providers.find((provider) => provider.modelId)?.modelId ?? undefined
     const model = selectedModel ?? legacyProviderModel
