@@ -181,7 +181,11 @@ export class ProvidersUseCases {
     const state = this.connectStates.get(this.stateKey(userId, providerId))
     if (state) return this.publicConnectState(state)
     return this.providers.findByProvider(userId, providerId).then((provider) => {
-      if (provider?.openCodeConnected || this.hasOpenCodeCredential(userId, providerId)) return { providerId, status: 'connected' }
+      const hasAuthFile = this.hasOpenCodeCredential(userId, providerId)
+      if (provider?.openCodeConnected || hasAuthFile) {
+        if (hasAuthFile && !provider?.openCodeConnected) void this.persistOpenCodeCredential(userId, providerId).catch(() => null)
+        return { providerId, status: 'connected' }
+      }
       return { providerId, status: 'idle' }
     })
   }

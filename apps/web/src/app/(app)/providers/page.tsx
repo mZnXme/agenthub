@@ -108,7 +108,7 @@ export default function ProvidersPage() {
                   </div>
                   <h2 className="page-title" style={{ fontSize: 32 }}>{provider.name}</h2>
                   <p className="panel-copy" style={{ flex: 1 }}>{provider.note}</p>
-                  <button className={`btn ${provider.primary ? 'primary' : 'ghost'}`} onClick={() => beginConnect(provider.id)} disabled={connecting === provider.id}>{connecting === provider.id ? 'Starting...' : provider.connectLabel}</button>
+                  <button className={`btn ${provider.primary ? 'primary' : 'ghost'}`} onClick={() => beginConnect(provider.id)} disabled={isConnected || connecting === provider.id}>{isConnected ? 'Connected' : connecting === provider.id ? 'Starting...' : provider.connectLabel}</button>
                 </article>
               )
             })}
