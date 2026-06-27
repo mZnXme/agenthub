@@ -16,7 +16,10 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
-            rm -rf /tmp/agenthub-deploy
+            rm -rf /tmp/agenthub-*
+            docker container prune -f || true
+            docker image prune -af || true
+            docker builder prune -af || true
             git clone --depth 1 --branch main https://github.com/mZnXme/agenthub.git /tmp/agenthub-deploy
             cp /opt/agenthub/.env /tmp/agenthub-deploy/.env
             cd /tmp/agenthub-deploy
@@ -29,5 +32,6 @@ jobs:
               node:20-alpine \
               sh -lc 'export DATABASE_URL="postgresql://agenthub:${POSTGRES_PASSWORD}@postgres:5432/agenthub?schema=public" && npx -y prisma@6.19.0 migrate deploy --schema=packages/db/prisma/schema.prisma'
             docker compose -p agenthub -f docker-compose.prod.yml --env-file .env up --build -d
-            docker image prune -f
+            docker image prune -af
+            docker builder prune -af
           envs: HOME=/home/deploy
