@@ -16,7 +16,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
-            rm -rf /tmp/agenthub-*
+            if [ -d /tmp/agenthub-deploy ]; then rm -rf /tmp/agenthub-deploy; fi
             docker container prune -f || true
             docker image prune -af || true
             docker builder prune -af || true
